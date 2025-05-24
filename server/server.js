@@ -10,8 +10,7 @@ import marketplaceRoutes from './routes/marketplaceRoutes.js';
 import cartRoutes from './routes/cartRoutes.js';
 import orderRoutes from './routes/orderRoutes.js';
 import reviewRoutes from './routes/reviewRoutes.js';
-import upload from "./config/upload.js"
-import uploadRouter from './routes/uploadRoutes.js';
+import uploadRoutes from './routes/uploadRoutes.js';
 import './config/passport.js';  // Passport configuration for Google OAuth
 
 dotenv.config();
@@ -36,7 +35,7 @@ app.use('/marketplace', marketplaceRoutes);
 app.use('/cart', cartRoutes);
 app.use('/orders', orderRoutes);
 app.use('/reviews', reviewRoutes);
-app.use('/upload', uploadRouter);
+app.use('/upload', uploadRoutes);
 // MongoDB connection
 mongoose.connect(process.env.MONGO_URI).then(() => console.log('MongoDB connected'))
   .catch(err => console.log(err));

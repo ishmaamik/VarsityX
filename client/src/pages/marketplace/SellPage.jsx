@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../../context/ThemeContext';
 import { 
@@ -24,7 +25,7 @@ const SellPage = () => {
   });
 
   const [images, setImages] = useState([]);
-  const [imageFiles, setImageFiles] = useState([]);
+  const [imageUrls, setImageUrls] = useState([]); // Store uploaded image URLs
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -39,6 +40,17 @@ const SellPage = () => {
   const universities = ['IUT', 'DU', 'BUET', 'NSU', 'BRAC'];
   const conditions = ['new', 'like new', 'good', 'fair'];
 
+  // Clean up object URLs when component unmounts
+  useEffect(() => {
+    return () => {
+      images.forEach(img => {
+        if (typeof img === 'string' && img.startsWith('blob:')) {
+          URL.revokeObjectURL(img);
+        }
+      });
+    };
+  }, [images]);
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
@@ -51,21 +63,78 @@ const SellPage = () => {
       return;
     }
 
-    // Store the actual files for upload
-    setImageFiles(prev => [...prev, ...files]);
+    // Validate file types
+    const validTypes = ['image/jpeg', 'image/png', 'image/jpg'];
+    const invalidFiles = files.filter(file => !validTypes.includes(file.type));
+    
+    if (invalidFiles.length > 0) {
+      setError('Only JPEG, JPG, and PNG files are allowed');
+      return;
+    }
 
-    // Create preview URLs
-    const previewUrls = files.map(file => URL.createObjectURL(file));
-    setImages(prev => [...prev, ...previewUrls]);
+    setError(null);
+    setLoading(true);
+
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        navigate('/login');
+        return;
+      }
+
+      // Upload each file and get URLs
+      const uploadPromises = files.map(async (file) => {
+        const formData = new FormData();
+        formData.append('file', file); // Use 'file' as field name to match backend
+        
+        const response = await axios.post(
+          'http://localhost:5000/upload/file/upload', 
+          formData, 
+          {
+            headers: {
+              'Content-Type': 'multipart/form-data',
+              Authorization: `Bearer ${token}`
+            }
+          }
+        );
+        
+        return response.data; // This should be the image URL
+      });
+
+      const uploadedUrls = await Promise.all(uploadPromises);
+      
+      // Add URLs to both preview and final URL arrays
+      setImageUrls(prev => [...prev, ...uploadedUrls]);
+      setImages(prev => [...prev, ...uploadedUrls]); // Use the server URLs for preview too
+      
+    } catch (err) {
+      console.error('Upload error:', err);
+      setError(err.response?.data?.message || 'Failed to upload images');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const removeImage = (index) => {
+    const imageToRemove = images[index];
+    
+    // Clean up blob URL if it's a local preview
+    if (typeof imageToRemove === 'string' && imageToRemove.startsWith('blob:')) {
+      URL.revokeObjectURL(imageToRemove);
+    }
+    
     setImages(prev => prev.filter((_, i) => i !== index));
-    setImageFiles(prev => prev.filter((_, i) => i !== index));
+    setImageUrls(prev => prev.filter((_, i) => i !== index));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    if (imageUrls.length === 0) {
+      setError('Please upload at least one image');
+      return;
+    }
+
     setLoading(true);
     setError(null);
 
@@ -76,35 +145,26 @@ const SellPage = () => {
         return;
       }
 
-      // Upload images first
-      const uploadedImages = [];
-      for (const file of imageFiles) {
-        const formData = new FormData();
-        formData.append('image', file);
-        
-        const response = await axios.post('http://localhost:5000/upload', formData, {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-            Authorization: `Bearer ${token}`
-          }
-        });
-        uploadedImages.push(response.data.imageUrl);
-      }
-
-      // Prepare listing data
+      // Prepare listing data with uploaded image URLs
       const listingData = {
         ...formData,
-        images: uploadedImages
+        images: imageUrls
       };
 
       // Adjust pricing fields based on priceType
       if (formData.priceType === 'fixed') {
         listingData.price = Number(formData.price);
+        delete listingData.startingBid;
+        delete listingData.hourlyRate;
       } else if (formData.priceType === 'bidding') {
         listingData.startingBid = Number(formData.startingBid);
         listingData.currentBid = Number(formData.startingBid);
+        delete listingData.price;
+        delete listingData.hourlyRate;
       } else if (formData.priceType === 'hourly') {
         listingData.hourlyRate = Number(formData.hourlyRate);
+        delete listingData.price;
+        delete listingData.startingBid;
       }
 
       // Create the listing
@@ -114,8 +174,8 @@ const SellPage = () => {
 
       navigate('/marketplace');
     } catch (err) {
+      console.error('Listing creation error:', err);
       setError(err.response?.data?.message || 'Failed to create listing');
-      console.error('Error creating listing:', err);
     } finally {
       setLoading(false);
     }
@@ -129,7 +189,7 @@ const SellPage = () => {
           <h1 className="text-3xl font-bold dark:text-white">Sell Your Item or Service</h1>
           <button
             onClick={toggleDarkMode}
-            className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700"
+            className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 dark:text-white"
           >
             {darkMode ? <Sun size={20} /> : <Moon size={20} />}
           </button>
@@ -150,7 +210,7 @@ const SellPage = () => {
                 name="category"
                 value={formData.category}
                 onChange={handleChange}
-                className="w-full p-3 border rounded-lg appearance-none bg-white dark:bg-gray-700 dark:text-white"
+                className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg appearance-none bg-white dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 required
               >
                 {categories.map(cat => (
@@ -159,7 +219,7 @@ const SellPage = () => {
                   </option>
                 ))}
               </select>
-              <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+              <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" />
             </div>
           </div>
 
@@ -172,7 +232,7 @@ const SellPage = () => {
               value={formData.title}
               onChange={handleChange}
               placeholder="What are you offering?"
-              className="w-full p-3 border rounded-lg bg-white dark:bg-gray-700 dark:text-white"
+              className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               required
             />
           </div>
@@ -185,7 +245,7 @@ const SellPage = () => {
               value={formData.description}
               onChange={handleChange}
               rows={4}
-              className="w-full p-3 border rounded-lg bg-white dark:bg-gray-700 dark:text-white"
+              className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               placeholder="Provide details about your item or service..."
               required
             />
@@ -198,10 +258,10 @@ const SellPage = () => {
               <button
                 type="button"
                 onClick={() => setFormData(prev => ({ ...prev, priceType: 'fixed' }))}
-                className={`flex items-center justify-center p-3 border rounded-lg ${
+                className={`flex items-center justify-center p-3 border rounded-lg transition-colors ${
                   formData.priceType === 'fixed' 
-                    ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30' 
-                    : 'bg-white dark:bg-gray-700'
+                    ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' 
+                    : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 dark:text-white'
                 }`}
               >
                 <DollarSign className="mr-2" size={16} />
@@ -210,10 +270,10 @@ const SellPage = () => {
               <button
                 type="button"
                 onClick={() => setFormData(prev => ({ ...prev, priceType: 'bidding' }))}
-                className={`flex items-center justify-center p-3 border rounded-lg ${
+                className={`flex items-center justify-center p-3 border rounded-lg transition-colors ${
                   formData.priceType === 'bidding' 
-                    ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30' 
-                    : 'bg-white dark:bg-gray-700'
+                    ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' 
+                    : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 dark:text-white'
                 }`}
               >
                 <Gavel className="mr-2" size={16} />
@@ -222,10 +282,10 @@ const SellPage = () => {
               <button
                 type="button"
                 onClick={() => setFormData(prev => ({ ...prev, priceType: 'hourly' }))}
-                className={`flex items-center justify-center p-3 border rounded-lg ${
+                className={`flex items-center justify-center p-3 border rounded-lg transition-colors ${
                   formData.priceType === 'hourly' 
-                    ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30' 
-                    : 'bg-white dark:bg-gray-700'
+                    ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' 
+                    : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 dark:text-white'
                 }`}
               >
                 <Clock className="mr-2" size={16} />
@@ -238,14 +298,14 @@ const SellPage = () => {
               <div className="mb-4">
                 <label className="block text-gray-700 dark:text-gray-300 font-medium mb-2">Price</label>
                 <div className="relative">
-                  <span className="absolute left-3 top-1/2 transform -translate-y-1/2">৳</span>
+                  <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400">৳</span>
                   <input
                     type="number"
                     name="price"
                     value={formData.price}
                     onChange={handleChange}
                     placeholder="0.00"
-                    className="w-full pl-8 pr-4 py-2 border rounded-lg bg-white dark:bg-gray-700 dark:text-white"
+                    className="w-full pl-8 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     min="0"
                     step="0.01"
                     required
@@ -258,14 +318,14 @@ const SellPage = () => {
               <div className="mb-4">
                 <label className="block text-gray-700 dark:text-gray-300 font-medium mb-2">Starting Bid</label>
                 <div className="relative">
-                  <span className="absolute left-3 top-1/2 transform -translate-y-1/2">৳</span>
+                  <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400">৳</span>
                   <input
                     type="number"
                     name="startingBid"
                     value={formData.startingBid}
                     onChange={handleChange}
                     placeholder="0.00"
-                    className="w-full pl-8 pr-4 py-2 border rounded-lg bg-white dark:bg-gray-700 dark:text-white"
+                    className="w-full pl-8 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     min="0"
                     step="0.01"
                     required
@@ -278,14 +338,14 @@ const SellPage = () => {
               <div className="mb-4">
                 <label className="block text-gray-700 dark:text-gray-300 font-medium mb-2">Hourly Rate</label>
                 <div className="relative">
-                  <span className="absolute left-3 top-1/2 transform -translate-y-1/2">৳</span>
+                  <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400">৳</span>
                   <input
                     type="number"
                     name="hourlyRate"
                     value={formData.hourlyRate}
                     onChange={handleChange}
                     placeholder="0.00"
-                    className="w-full pl-8 pr-4 py-2 border rounded-lg bg-white dark:bg-gray-700 dark:text-white"
+                    className="w-full pl-8 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     min="0"
                     step="0.01"
                     required
@@ -302,10 +362,10 @@ const SellPage = () => {
               <button
                 type="button"
                 onClick={() => setFormData(prev => ({ ...prev, visibility: 'university' }))}
-                className={`flex items-center justify-center p-3 border rounded-lg ${
+                className={`flex items-center justify-center p-3 border rounded-lg transition-colors ${
                   formData.visibility === 'university' 
-                    ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30' 
-                    : 'bg-white dark:bg-gray-700'
+                    ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' 
+                    : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 dark:text-white'
                 }`}
               >
                 <EyeOff className="mr-2" size={16} />
@@ -314,10 +374,10 @@ const SellPage = () => {
               <button
                 type="button"
                 onClick={() => setFormData(prev => ({ ...prev, visibility: 'all' }))}
-                className={`flex items-center justify-center p-3 border rounded-lg ${
+                className={`flex items-center justify-center p-3 border rounded-lg transition-colors ${
                   formData.visibility === 'all' 
-                    ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30' 
-                    : 'bg-white dark:bg-gray-700'
+                    ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' 
+                    : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 dark:text-white'
                 }`}
               >
                 <Eye className="mr-2" size={16} />
@@ -334,14 +394,14 @@ const SellPage = () => {
                 name="university"
                 value={formData.university}
                 onChange={handleChange}
-                className="w-full p-3 border rounded-lg appearance-none bg-white dark:bg-gray-700 dark:text-white"
+                className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg appearance-none bg-white dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 required
               >
                 {universities.map(uni => (
                   <option key={uni} value={uni}>{uni}</option>
                 ))}
               </select>
-              <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+              <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" />
             </div>
           </div>
 
@@ -355,10 +415,10 @@ const SellPage = () => {
                     key={cond}
                     type="button"
                     onClick={() => setFormData(prev => ({ ...prev, condition: cond }))}
-                    className={`p-2 border rounded-lg text-center ${
+                    className={`p-2 border rounded-lg text-center transition-colors ${
                       formData.condition === cond
-                        ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30'
-                        : 'bg-white dark:bg-gray-700'
+                        ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
+                        : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 dark:text-white'
                     }`}
                   >
                     {cond.charAt(0).toUpperCase() + cond.slice(1)}
@@ -377,12 +437,12 @@ const SellPage = () => {
                   <img 
                     src={img} 
                     alt={`Preview ${index}`}
-                    className="w-full h-32 object-cover rounded-lg"
+                    className="w-full h-32 object-cover rounded-lg border border-gray-200 dark:border-gray-600"
                   />
                   <button
                     type="button"
                     onClick={() => removeImage(index)}
-                    className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                    className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
                   >
                     <X size={16} />
                   </button>
@@ -390,29 +450,38 @@ const SellPage = () => {
               ))}
               
               {images.length < 6 && (
-                <label className="h-32 flex items-center justify-center border-2 border-dashed rounded-lg cursor-pointer bg-white dark:bg-gray-700 dark:border-gray-600">
+                <label className="h-32 flex items-center justify-center border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg cursor-pointer bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors">
                   <input 
                     type="file" 
                     className="hidden" 
                     onChange={handleImageUpload}
                     multiple
-                    accept="image/*"
+                    accept="image/jpeg,image/png,image/jpg"
+                    disabled={loading}
                   />
                   <div className="text-center">
-                    <Image className="mx-auto mb-1 text-gray-400" size={24} />
-                    <span className="text-sm text-gray-500 dark:text-gray-400">Add photos</span>
+                    {loading ? (
+                      <Loader className="animate-spin mx-auto mb-1 text-gray-400" size={24} />
+                    ) : (
+                      <Image className="mx-auto mb-1 text-gray-400" size={24} />
+                    )}
+                    <span className="text-sm text-gray-500 dark:text-gray-400">
+                      {loading ? 'Uploading...' : 'Add photos'}
+                    </span>
                   </div>
                 </label>
               )}
             </div>
-            <p className="text-sm text-gray-500 dark:text-gray-400">Upload up to 6 photos (required)</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              Upload up to 6 photos (JPEG, PNG only) - At least 1 image required
+            </p>
           </div>
 
           {/* Submit Button */}
           <button
             type="submit"
-            disabled={loading}
-            className="w-full py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800 disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center"
+            disabled={loading || imageUrls.length === 0}
+            className="w-full py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center transition-colors"
           >
             {loading ? (
               <>
@@ -423,7 +492,7 @@ const SellPage = () => {
               'Publish Listing'
             )}
           </button>
-          </form>
+        </form>
       </div>
     </div>
   );
