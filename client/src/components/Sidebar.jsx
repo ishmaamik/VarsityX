@@ -20,7 +20,8 @@ import {
   CreditCard,
   GraduationCap,
   Settings,
-  LogOut
+  LogOut,
+  Tag, // ✅ new icon for Price Advisor
 } from "lucide-react";
 
 const Sidebar = ({ open, setOpen }) => {
@@ -36,25 +37,52 @@ const Sidebar = ({ open, setOpen }) => {
     { title: "Dashboard", icon: <LayoutDashboard size={20} />, path: "/" },
     { title: "Listings", icon: <Book size={20} />, path: "/listings" },
     { title: "Electronics", icon: <Laptop size={20} />, path: "/electronics" },
-    { title: "Transport", icon: <Bike size={20} />, gap: true, path: "/transport" },
+    {
+      title: "Transport",
+      icon: <Bike size={20} />,
+      gap: true,
+      path: "/transport",
+    },
     { title: "Services", icon: <MessageSquare size={20} />, path: "/services" },
     { title: "Search", icon: <Search size={20} />, path: "/search" },
-    { title: "Transactions", icon: <BarChart2 size={20} />, path: "/transactions" },
-    { title: "Verification", icon: <ShieldCheck size={20} />, gap: true, path: "/verification" },
+    { title: "Price Advisor", icon: <Tag size={20} />, path: "/price-advisor" }, // ✅ Added here
+    {
+      title: "Transactions",
+      icon: <BarChart2 size={20} />,
+      path: "/transactions",
+    },
+    {
+      title: "Verification",
+      icon: <ShieldCheck size={20} />,
+      gap: true,
+      path: "/verification",
+    },
     { title: "Campus Map", icon: <MapPin size={20} />, path: "/map" },
     { title: "Payments", icon: <CreditCard size={20} />, path: "/payments" },
     { title: "Profile", icon: <User size={20} />, gap: true, path: "/profile" },
   ];
 
   return (
-    <div className={`${open ? "w-64" : "w-20"} bg-gradient-to-br from-gray-900 to-gray-800 text-white h-screen flex flex-col transition-all duration-300 shadow-lg z-50`}>
+    <div
+      className={`${
+        open ? "w-64" : "w-20"
+      } bg-gradient-to-br from-gray-900 to-gray-800 text-white h-screen flex flex-col transition-all duration-300 shadow-lg z-50`}
+    >
       {/* Header */}
       <div className="p-4 flex items-center justify-between border-b border-gray-700 flex-shrink-0">
         <div className="flex items-center gap-x-4">
-          <div className={`w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center transition-transform duration-500 ${open && "rotate-[360deg]"}`}>
+          <div
+            className={`w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center transition-transform duration-500 ${
+              open && "rotate-[360deg]"
+            }`}
+          >
             <GraduationCap size={24} />
           </div>
-          <h1 className={`text-xl font-bold tracking-wide transition-all duration-300 ${!open && "scale-0"}`}>
+          <h1
+            className={`text-xl font-bold tracking-wide transition-all duration-300 ${
+              !open && "scale-0"
+            }`}
+          >
             CampusSwap
           </h1>
         </div>
@@ -78,12 +106,18 @@ const Sidebar = ({ open, setOpen }) => {
               <li key={index}>
                 <Link
                   to={menu.path}
-                  className={`flex items-center gap-x-4 p-3 rounded-lg hover:bg-gray-700 transition-colors ${menu.gap ? "mt-4" : ""}`}
+                  className={`flex items-center gap-x-4 p-3 rounded-lg hover:bg-gray-700 transition-colors ${
+                    menu.gap ? "mt-4" : ""
+                  }`}
                 >
                   <div className="w-5 h-5 flex items-center justify-center">
                     {menu.icon}
                   </div>
-                  <span className={`whitespace-nowrap transition-opacity duration-200 ${!open && "opacity-0"}`}>
+                  <span
+                    className={`whitespace-nowrap transition-opacity duration-200 ${
+                      !open && "opacity-0"
+                    }`}
+                  >
                     {menu.title}
                   </span>
                 </Link>
@@ -101,7 +135,11 @@ const Sidebar = ({ open, setOpen }) => {
           className="flex items-center gap-x-4 p-3 rounded-lg hover:bg-gray-700 transition-colors w-full"
         >
           <LogOut size={20} />
-          <span className={`whitespace-nowrap transition-opacity duration-200 ${!open && "opacity-0"}`}>
+          <span
+            className={`whitespace-nowrap transition-opacity duration-200 ${
+              !open && "opacity-0"
+            }`}
+          >
             Logout
           </span>
         </button>

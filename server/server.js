@@ -7,10 +7,13 @@ import mongoose from 'mongoose';
 import userRoutes from './routes/userRoutes.js';  // Handles User and Admin authentication
 import adminRoutes from './routes/adminRoutes.js';  // Separate Admin routes for admin-specific tasks
 import './config/passport.js';  // Passport configuration for Google OAuth
+import priceAdvisorRoutes from "./routes/priceAdvisorRoutes.js";
+
 
 dotenv.config();
 
 const app = express();
+
 
 // Middleware
 const corsOptions = {
@@ -26,6 +29,7 @@ app.use(passport.initialize());
 app.use('/user', userRoutes); 
 
 app.use('/admin', adminRoutes); 
+app.use("/api/price-advisor", priceAdvisorRoutes);
 
 
 // MongoDB connection
