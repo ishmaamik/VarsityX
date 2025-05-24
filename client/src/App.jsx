@@ -15,8 +15,9 @@ import ListingDetail from "./pages/marketplace/ListingDetail";
 import Cart from "./pages/marketplace/Cart";
 import SafeMeetups from "./pages/SafeMeetups";
 import CampusNavigation from "./components/CampusNavigation";
-import ImageUploader from "./components/ImageUploader"
+import ImageUploader from "./components/ImageUploader";
 import PriceAdvisorPage from "./pages/PriceAdvisorPage";
+import VoiceImageChatbot from "./pages/VoiceImageChatbot";
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
@@ -205,7 +206,7 @@ function AppContent() {
           element={
             <ProtectedRoute>
               <Layout>
-                <ImageUploader/>
+                <ImageUploader />
               </Layout>
             </ProtectedRoute>
           }
@@ -243,6 +244,7 @@ function AppContent() {
             </ProtectedRoute>
           }
         />
+        <Route path="/chat" element={<VoiceImageChatbot />} />
 
         {/* Redirect any unknown routes to home */}
         <Route path="*" element={<Navigate to="/home" replace />} />
