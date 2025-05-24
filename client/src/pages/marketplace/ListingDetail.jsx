@@ -224,12 +224,11 @@ const ListingDetail = () => {
             <div className="h-96 bg-gray-200 dark:bg-gray-700 overflow-hidden">
               {listing.images?.[0] ? (
                 <>
-              {console.log(listing.images[0])}
-                <img 
-                  src={`http://localhost:5000/upload/file/${listing.images[0]}`} 
-                  alt={listing.title}
-                  className="w-full h-full object-contain"
-                />
+                  <img 
+                    src={`http://localhost:5000/images/${listing.images[0]}`}
+                    alt={listing.title}
+                    className="w-full h-full object-contain"
+                  />
                 </>
               ) : (
                 <div className="w-full h-full flex items-center justify-center text-gray-400">
@@ -241,7 +240,7 @@ const ListingDetail = () => {
               {listing.images?.map((img, index) => (
                 <div key={index} className="h-24 bg-gray-100 dark:bg-gray-700 overflow-hidden cursor-pointer">
                   <img 
-                    src={`http://localhost:5000/upload/file/${img}`} 
+                    src={`http://localhost:5000/images/${img}`}
                     alt={`Thumbnail ${index}`}
                     className="w-full h-full object-cover"
                   />

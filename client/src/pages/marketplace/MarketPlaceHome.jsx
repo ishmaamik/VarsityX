@@ -216,7 +216,7 @@ const MarketplaceHome = () => {
                 <div className="h-48 overflow-hidden">
                   {listing.images?.[0] ? (
                     <img 
-                      src={listing.images[0]} 
+                      src={`http://localhost:5000/images/${listing.images[0]}`}
                       alt={listing.title}
                       className="w-full h-full object-cover"
                     />

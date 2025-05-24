@@ -149,7 +149,7 @@ const SellPage = () => {
       // Prepare listing data with uploaded image URLs
       const listingData = {
         ...formData,
-        images: imageUrls
+        images: imageUrls // Send just the filenames
       };
 
       // Adjust pricing fields based on priceType

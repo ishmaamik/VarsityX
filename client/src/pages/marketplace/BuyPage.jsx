@@ -265,7 +265,7 @@ const BuyPage = () => {
               <div className="h-48 bg-gray-200 dark:bg-gray-700 overflow-hidden">
                 {item.images?.[0] ? (
                   <img 
-                    src={`http://localhost:5000/upload/file/${item.images[0]}`} 
+                    src={`http://localhost:5000/images/${item.images[0]}`}
                     alt={item.title}
                     className="w-full h-full object-cover"
                   />
