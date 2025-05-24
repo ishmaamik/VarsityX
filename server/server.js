@@ -8,7 +8,7 @@ import userRoutes from './routes/userRoutes.js';  // Handles User and Admin auth
 import adminRoutes from './routes/adminRoutes.js';  // Separate Admin routes for admin-specific tasks
 import './config/passport.js';  // Passport configuration for Google OAuth
 import priceAdvisorRoutes from "./routes/priceAdvisorRoutes.js";
-
+import paymentRoutes from './routes/paymentRoutes.js';
 
 dotenv.config();
 
@@ -30,6 +30,7 @@ app.use('/user', userRoutes);
 
 app.use('/admin', adminRoutes); 
 app.use("/api/price-advisor", priceAdvisorRoutes);
+app.use('/api/payment', paymentRoutes);
 
 
 // MongoDB connection

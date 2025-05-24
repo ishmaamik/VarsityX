@@ -40,7 +40,15 @@ router.post("/", upload.single("image"), async (req, res) => {
     const text = result.response?.candidates?.[0]?.content?.parts?.[0]?.text;
     const cleanText = text.replace(/```json|```/g, "").trim();
 
-    res.json({ generatedText: cleanText });
+    // Try to parse the response as JSON
+    let parsed;
+    try {
+      parsed = JSON.parse(cleanText);
+    } catch {
+      parsed = { comment: cleanText };
+    }
+
+    res.json(parsed);
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Gemini API call failed" });

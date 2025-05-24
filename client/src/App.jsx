@@ -8,6 +8,8 @@ import { AnimatePresence } from "framer-motion";
 import Home from "./pages/Home";
 import Sidebar from "./components/Sidebar";
 import PriceAdvisorPage from "./pages/PriceAdvisorPage"; // ✅ adjust path if needed
+import Payment from "./pages/Payment"; // ✅ adjust path if needed
+
 
 function AppContent() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -63,6 +65,8 @@ function AppContent() {
             </div>
           }
         />
+        <Route path="/payment" element={<Payment />} />
+       
       </Routes>
     </AnimatePresence>
   );
