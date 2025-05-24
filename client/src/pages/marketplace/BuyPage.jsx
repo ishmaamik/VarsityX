@@ -7,7 +7,7 @@ import {
 import { useTheme } from '../../context/ThemeContext';
 import axios from 'axios';
 
-const universities = ['University', 'IUT', 'DU', 'BUET', 'NSU', 'BRAC'];
+const universities = ['All Universities', 'IUT', 'DU', 'BUET', 'NSU', 'BRAC'];
 const conditions = ['Condition', 'New', 'Like New', 'Good', 'Fair'];
 
 const categories = [
@@ -40,7 +40,11 @@ const BuyPage = () => {
     const fetchListings = async () => {
       try {
         setLoading(true);
+        const token = localStorage.getItem('token');
+        const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
         const response = await axios.get('http://localhost:5000/marketplace', {
+          headers,
           params: {
             search: searchTerm,
             category: activeCategory === 'all' ? null : activeCategory,

@@ -1,4 +1,3 @@
-
 import express from 'express';
 import { 
   createListing, 
@@ -9,11 +8,12 @@ import {
   placeBid
 } from '../controllers/listingController.js';
 import { authorizeRole } from '../middleware/roleMiddleware.js';
+import { authenticate } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
 // Public routes
-router.get('/', getListings);
+router.get('/', authenticate, getListings);
 router.get('/:id', getListing);
 
 // Protected routes

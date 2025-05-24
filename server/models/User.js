@@ -1,6 +1,7 @@
 // models/User.js
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
 
 const userSchema = new mongoose.Schema({
   displayName: {
@@ -21,7 +22,6 @@ const userSchema = new mongoose.Schema({
   password: {
     type: String,
     required: [true, 'Please provide a password'],
-    minlength: [6, 'Password must be at least 6 characters long'],
     select: false
   },
   photo: {
@@ -30,12 +30,8 @@ const userSchema = new mongoose.Schema({
   },
   university: {
     type: String,
-    required: [true, 'Please select your university'],
-    enum: {
-      values: ['IUT', 'BUET', 'DU', 'BRAC', 'NSU'],
-      message: 'Please select a valid university'
-    },
-    trim: true
+    required: [true, 'Please select a university'],
+    enum: ['IUT', 'BUET', 'DU', 'BRAC', 'NSU']
   },
   role: {
     type: String,
@@ -98,6 +94,8 @@ const userSchema = new mongoose.Schema({
     type: String,
     default: ''
   },
+  resetPasswordToken: String,
+  resetPasswordExpire: Date,
   createdAt: {
     type: Date,
     default: Date.now
@@ -138,6 +136,13 @@ userSchema.methods.calculateAverageRating = function() {
     this.averageRating = sum / this.ratings.length;
     this.totalRatings = this.ratings.length;
   }
+};
+
+// Sign JWT and return
+userSchema.methods.getSignedJwtToken = function() {
+  return jwt.sign({ id: this._id }, process.env.JWT_SECRET || 'your-jwt-secret', {
+    expiresIn: '24h' // Default to 24 hours if JWT_EXPIRE is not set
+  });
 };
 
 const User = mongoose.model('User', userSchema);

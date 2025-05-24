@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../../context/ThemeContext';
+import { useAuth } from '../../context/AuthContext';
 import { 
   Book, Laptop, Bike, GraduationCap, MessageSquare, 
   Image, X, ChevronDown, DollarSign, Clock, Gavel, Eye, EyeOff, Moon, Sun, Loader
@@ -10,6 +11,7 @@ import axios from 'axios';
 const SellPage = () => {
   const navigate = useNavigate();
   const { darkMode, toggleDarkMode } = useTheme();
+  const { user } = useAuth();
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -19,12 +21,11 @@ const SellPage = () => {
     startingBid: '',
     hourlyRate: '',
     condition: 'good',
-    university: 'IUT',
     visibility: 'university'
   });
 
   const [images, setImages] = useState([]);
-  const [imageUrls, setImageUrls] = useState([]); // Store uploaded image URLs
+  const [imageUrls, setImageUrls] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -77,7 +78,7 @@ const SellPage = () => {
     try {
       const token = localStorage.getItem('token');
       if (!token) {
-        navigate('/login');
+        setError('Please log in to upload images');
         return;
       }
 
@@ -131,6 +132,11 @@ const SellPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
+    if (!user?.university) {
+      setError('Please update your university in your profile settings before creating a listing');
+      return;
+    }
+
     if (imageUrls.length === 0) {
       setError('Please upload at least one image');
       return;
@@ -142,14 +148,15 @@ const SellPage = () => {
     try {
       const token = localStorage.getItem('token');
       if (!token) {
-        navigate('/login');
+        setError('Please log in to create a listing');
         return;
       }
 
-      // Prepare listing data with uploaded image URLs
+      // Prepare listing data with uploaded image URLs and user's university
       const listingData = {
         ...formData,
-        images: imageUrls // Send just the filenames
+        images: imageUrls,
+        university: user.university
       };
 
       // Adjust pricing fields based on priceType
@@ -188,12 +195,29 @@ const SellPage = () => {
         {/* Header with theme toggle */}
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-bold dark:text-white">Sell Your Item or Service</h1>
-          
         </div>
         
         {error && (
           <div className="mb-4 p-3 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded-lg">
             {error}
+          </div>
+        )}
+
+        {!user && (
+          <div className="mb-4 p-3 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300 rounded-lg">
+            Please log in to create a listing
+          </div>
+        )}
+
+        {user && !user.university && (
+          <div className="mb-4 p-3 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300 rounded-lg">
+            Please update your university in profile settings before creating a listing
+          </div>
+        )}
+
+        {user?.university && (
+          <div className="mb-4 p-3 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg">
+            Creating listing for {user.university}
           </div>
         )}
 
@@ -363,9 +387,10 @@ const SellPage = () => {
                     ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' 
                     : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 dark:text-white'
                 }`}
+                disabled={!user?.university}
               >
                 <EyeOff className="mr-2" size={16} />
-                My University Only
+                {user?.university ? `${user.university} Only` : 'My University Only'}
               </button>
               <button
                 type="button"
@@ -375,54 +400,13 @@ const SellPage = () => {
                     ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' 
                     : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 dark:text-white'
                 }`}
+                disabled={!user?.university}
               >
                 <Eye className="mr-2" size={16} />
                 All Universities
               </button>
             </div>
           </div>
-
-          {/* University Selection */}
-          <div className="mb-6">
-            <label className="block text-gray-700 dark:text-gray-300 font-medium mb-2">Your University</label>
-            <div className="relative">
-              <select
-                name="university"
-                value={formData.university}
-                onChange={handleChange}
-                className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg appearance-none bg-white dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                required
-              >
-                {universities.map(uni => (
-                  <option key={uni} value={uni}>{uni}</option>
-                ))}
-              </select>
-              <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" />
-            </div>
-          </div>
-
-          {/* Condition (for physical items) */}
-          {(formData.category === 'textbooks' || formData.category === 'electronics') && (
-            <div className="mb-6">
-              <label className="block text-gray-700 dark:text-gray-300 font-medium mb-2">Condition</label>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                {conditions.map(cond => (
-                  <button
-                    key={cond}
-                    type="button"
-                    onClick={() => setFormData(prev => ({ ...prev, condition: cond }))}
-                    className={`p-2 border rounded-lg text-center transition-colors ${
-                      formData.condition === cond
-                        ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
-                        : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 dark:text-white'
-                    }`}
-                  >
-                    {cond.charAt(0).toUpperCase() + cond.slice(1)}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
 
           {/* Image Upload */}
           <div className="mb-6">
@@ -446,14 +430,14 @@ const SellPage = () => {
               ))}
               
               {images.length < 6 && (
-                <label className="h-32 flex items-center justify-center border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg cursor-pointer bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors">
+                <label className={`h-32 flex items-center justify-center border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg cursor-pointer bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors ${!user?.university ? 'opacity-50 cursor-not-allowed' : ''}`}>
                   <input 
                     type="file" 
                     className="hidden" 
                     onChange={handleImageUpload}
                     multiple
                     accept="image/jpeg,image/png,image/jpg"
-                    disabled={loading}
+                    disabled={loading || !user?.university}
                   />
                   <div className="text-center">
                     {loading ? (
@@ -476,7 +460,7 @@ const SellPage = () => {
           {/* Submit Button */}
           <button
             type="submit"
-            disabled={loading || imageUrls.length === 0}
+            disabled={loading || imageUrls.length === 0 || !user?.university}
             className="w-full py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center transition-colors"
           >
             {loading ? (

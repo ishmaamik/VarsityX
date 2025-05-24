@@ -20,8 +20,12 @@ const MarketplaceHome = () => {
   useEffect(() => {
     const fetchFeaturedListings = async () => {
       try {
+        const token = localStorage.getItem('token');
+        const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
         const response = await axios.get('http://localhost:5000/marketplace', {
-          params: { limit: 3, sortBy: 'newest' }
+          headers,
+          params: { limit: 100, sortBy: 'newest' }
         });
         setFeaturedListings(response.data.listings);
       } catch (err) {

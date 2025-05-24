@@ -85,11 +85,6 @@ export const getListings = async (req, res) => {
       query.category = category;
     }
     
-    // Apply university filter
-    if (university && university !== 'University') {
-      query.university = university;
-    }
-    
     // Apply condition filter
     if (condition && condition !== 'Condition') {
       query.condition = condition.toLowerCase();
@@ -101,24 +96,57 @@ export const getListings = async (req, res) => {
       if (minPrice) query.price.$gte = Number(minPrice);
       if (maxPrice) query.price.$lte = Number(maxPrice);
     }
-    
-    // Apply visibility filter
-    if (req.user?.userId) {
+
+    // Apply visibility and university filter
+    if (req.user) {
       const user = await User.findById(req.user.userId);
       if (user?.university) {
-        query.$and = [
-          {
-            $or: [
-              { visibility: 'all' },
+        // Show all public listings AND university-specific listings for user's university
+        query.$or = [
+          { visibility: 'all' },
+          { 
+            $and: [
+              { visibility: 'university' },
               { university: user.university }
             ]
           }
         ];
+
+        // If university filter is applied
+        if (university && university !== 'all') {
+          // Show only listings from the selected university that are either:
+          // 1. Public listings from that university OR
+          // 2. University-specific listings if user is from that university
+          query = {
+            $and: [
+              { university },
+              {
+                $or: [
+                  { visibility: 'all' },
+                  {
+                    $and: [
+                      { visibility: 'university' },
+                      { university: user.university }
+                    ]
+                  }
+                ]
+              }
+            ]
+          };
+        }
       } else {
+        // If user has no university, only show public listings
         query.visibility = 'all';
+        if (university && university !== 'all') {
+          query.university = university;
+        }
       }
     } else {
+      // If not logged in, only show public listings
       query.visibility = 'all';
+      if (university && university !== 'all') {
+        query.university = university;
+      }
     }
     
     // Set sort options

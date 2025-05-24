@@ -24,6 +24,8 @@ import morgan from 'morgan';
 import errorHandler from './middleware/error.js';
 import fs from 'fs';
 import path from 'path';
+import authRoutes from './routes/auth.js';
+import universityRoutes from './routes/universityRoutes.js';
 
 dotenv.config();
 
@@ -84,6 +86,9 @@ mongoose.connect(process.env.MONGO_URI)
     app.use('/api/messages', messageRoutes);
     app.use('/api/transactions', transactionRoutes);
     app.use('/api/payment', paymentRoutes);  // Register payment routes
+    app.use('/api/auth', authRoutes);
+    app.use('/api/users', userRoutes);
+    app.use('/api/universities', universityRoutes);
 
     // Error handler
     app.use((err, req, res, next) => {

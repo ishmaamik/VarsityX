@@ -167,10 +167,23 @@ export const googleOAuth = (req, res) => {
 // Get User Data (accessible by both User and Admin)
 export const getUserData = async (req, res) => {
   try {
-    const user = await User.findById(req.user.userId);
-    res.json(user);
+    const user = await User.findById(req.user.userId).populate('university');
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+    res.json({
+      success: true,
+      data: user
+    });
   } catch (err) {
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ 
+      success: false,
+      message: 'Server error',
+      error: err.message
+    });
   }
 };
 
@@ -225,6 +238,44 @@ export const searchUsers = async (req, res) => {
       success: false,
       message: 'Error searching users',
       error: error.message
+    });
+  }
+};
+
+// Update user's university
+export const updateUniversity = async (req, res) => {
+  try {
+    const { university } = req.body;
+    
+    if (!university) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide a university ID'
+      });
+    }
+
+    const user = await User.findByIdAndUpdate(
+      req.user.userId,
+      { university },
+      { new: true, runValidators: true }
+    ).populate('university');
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    res.json({
+      success: true,
+      data: user
+    });
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update university',
+      error: err.message
     });
   }
 };

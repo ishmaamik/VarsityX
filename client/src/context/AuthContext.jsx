@@ -28,8 +28,12 @@ export const AuthProvider = ({ children }) => {
         axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
         
         // Get user data
-        const response = await axios.get('http://localhost:5000/user/user-data');
-        setUser(response.data);
+        const response = await axios.get('http://localhost:5000/api/users/user-data');
+        if (response.data.success) {
+          setUser(response.data.data);
+        } else {
+          throw new Error(response.data.message || 'Failed to get user data');
+        }
       }
     } catch (error) {
       console.error('Auth check failed:', error);
@@ -42,7 +46,7 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     try {
-      const response = await axios.post('http://localhost:5000/user/login', {
+      const response = await axios.post('http://localhost:5000/api/auth/login', {
         email,
         password
       });
