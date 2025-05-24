@@ -1,4 +1,3 @@
-
 import mongoose from 'mongoose';
 
 const listingSchema = new mongoose.Schema({
@@ -44,6 +43,16 @@ const listingSchema = new mongoose.Schema({
     default: 'active'
   },
   createdAt: { type: Date, default: Date.now }
+}, {
+  toJSON: { virtuals: true },
+  toObject: { virtuals: true }
+});
+
+// Virtual populate for reviews
+listingSchema.virtual('reviews', {
+  ref: 'Review',
+  localField: '_id',
+  foreignField: 'listing'
 });
 
 const Listing = mongoose.model('Listing', listingSchema);

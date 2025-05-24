@@ -119,7 +119,7 @@ const MarketplaceHome = () => {
         <div className="px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
-              <h1 className="text-2xl font-bold text-blue-600 dark:text-blue-400">CampusSwap</h1>
+              <h1 className="text-2xl font-bold text-blue-600 dark:text-blue-400">VarsityX</h1>
             </div>
 
             <div className="flex items-center space-x-4">
@@ -247,7 +247,7 @@ const MarketplaceHome = () => {
 
         {/* How It Works */}
         <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-8 mb-8">
-          <h2 className="text-2xl font-bold mb-6 dark:text-white">How CampusSwap Works</h2>
+          <h2 className="text-2xl font-bold mb-6 dark:text-white">How VarsityX Works</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
               <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center text-blue-600 dark:text-blue-400 mb-4">
