@@ -14,8 +14,9 @@ import SellPage from "./pages/marketplace/SellPage";
 import ListingDetail from "./pages/marketplace/ListingDetail";
 import Cart from "./pages/marketplace/Cart";
 import SafeMeetups from "./pages/SafeMeetups";
+import Messages from "./pages/Messages";
 import CampusNavigation from "./components/CampusNavigation";
-import ImageUploader from "./components/ImageUploader"
+import ImageUploader from "./components/ImageUploader";
 import PriceAdvisorPage from "./pages/PriceAdvisorPage";
 
 // Protected Route Component
@@ -172,7 +173,7 @@ function AppContent() {
           element={
             <ProtectedRoute>
               <Layout>
-                <div>Messages Component</div>
+                <Messages />
               </Layout>
             </ProtectedRoute>
           }
@@ -205,7 +206,7 @@ function AppContent() {
           element={
             <ProtectedRoute>
               <Layout>
-                <ImageUploader/>
+                <ImageUploader />
               </Layout>
             </ProtectedRoute>
           }
