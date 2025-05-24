@@ -33,6 +33,10 @@ const Sidebar = ({ open, setOpen }) => {
   const Menus = [
     { title: "Dashboard", icon: <LayoutDashboard size={20} />, path: "/" },
     { title: "Browse", icon: <ShoppingBag size={20} />, path: "/marketplace" },
+    { title: "My Listings", icon: <Book size={20} />, path: "/listings" },
+    { title: "Electronics", icon: <Laptop size={20} />, path: "/electronics" },
+    { title: "Transport", icon: <Bike size={20} />, gap: true, path: "/transport" },
+    { title: "Services", icon: <MessageSquare size={20} />, path: "/services" },
     { title: "Search", icon: <Search size={20} />, path: "/search" },
     {
       title: "Sell Item",
@@ -84,12 +88,8 @@ const Sidebar = ({ open, setOpen }) => {
           >
             <GraduationCap size={24} />
           </div>
-          <h1
-            className={`text-xl font-bold tracking-wide transition-all duration-300 ${
-              !open && "scale-0"
-            }`}
-          >
-            CampusSwap
+          <h1 className={`text-xl font-bold tracking-wide transition-all duration-300 ${!open && "scale-0"}`}>
+            VarsityX
           </h1>
         </div>
         <button

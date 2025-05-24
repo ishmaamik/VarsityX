@@ -8,6 +8,11 @@ import Home from "./pages/Home";
 import Sidebar from "./components/Sidebar";
 import SafeMeetups from "./pages/SafeMeetups";
 import ImageUploader from './components/ImageUploader';
+import MarketplaceHome from "./pages/marketplace/MarketPlaceHome";
+import BuyPage from "./pages/marketplace/BuyPage";
+import SellPage from "./pages/marketplace/SellPage";
+import ListingDetail from "./pages/marketplace/ListingDetail";
+import Cart from "./pages/marketplace/Cart";
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
@@ -40,18 +45,6 @@ function AppContent() {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
 
-        {/* Protected Routes */}
-        <Route
-          path="/"
-          element={
-            <ProtectedRoute>
-              <Layout>
-                <Home />
-              </Layout>
-            </ProtectedRoute>
-          }
-        />
-
         <Route
           path="/safe-meetups"
           element={
@@ -76,7 +69,21 @@ function AppContent() {
 
         {/* Redirect any unknown routes to home */}
         <Route path="*" element={<Navigate to="/" replace />} />
+        <Route path="/marketplace" element={<MarketplaceHome />} />
+        <Route path="/marketplace/buy" element={<BuyPage />} />
+        <Route path="/marketplace/sell" element={<SellPage />} />
+        <Route path="/marketplace/listing/:id" element={<ListingDetail />} />
+        <Route path="/marketplace/cart" element={<Cart />} />
+        
+        <Route path="/home" element={
+          <ProtectedRoute>
+            <Layout>
+              <Home />
+            </Layout>
+          </ProtectedRoute>
+        }/>
       </Routes>
+      
     </AnimatePresence>
   );
 }
