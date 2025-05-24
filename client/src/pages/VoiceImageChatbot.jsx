@@ -1,11 +1,12 @@
 import React, { useState, useRef, useEffect } from "react";
 import axios from "axios";
-import { Mic } from "lucide-react";
+import { Mic, Image as ImageIcon } from "lucide-react";
 import { marked } from "marked";
 
 const Chatbot = () => {
   const [chatHistory, setChatHistory] = useState([]);
   const [question, setQuestion] = useState("");
+  const [image, setImage] = useState(null);
   const [generatingAnswer, setGeneratingAnswer] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const recognitionRef = useRef(null);
@@ -16,19 +17,19 @@ const Chatbot = () => {
       window.SpeechRecognition || window.webkitSpeechRecognition;
     if (SpeechRecognition) {
       recognitionRef.current = new SpeechRecognition();
+      recognitionRef.current.lang = "en-US";
       recognitionRef.current.continuous = false;
       recognitionRef.current.interimResults = false;
-      recognitionRef.current.lang = "en-US";
 
-      recognitionRef.current.onresult = (event) => {
-        const transcript = event.results[0][0].transcript;
+      recognitionRef.current.onresult = (e) => {
+        const transcript = e.results[0][0].transcript;
         setQuestion(transcript);
         setIsListening(false);
       };
 
       recognitionRef.current.onerror = () => {
+        alert("Voice input error");
         setIsListening(false);
-        alert("Speech recognition error");
       };
     }
   }, []);
@@ -46,33 +47,40 @@ const Chatbot = () => {
     }
   };
 
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setImage(file);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!question.trim()) return;
+    if (!question && !image) return;
 
-    const currentQuestion = question;
     setGeneratingAnswer(true);
-    setQuestion("");
 
     setChatHistory((prev) => [
       ...prev,
-      { type: "user", content: currentQuestion },
+      {
+        type: "user",
+        content: question || "[Image Uploaded]",
+        imagePreview: image ? URL.createObjectURL(image) : null,
+      },
     ]);
 
+    const formData = new FormData();
+    formData.append("prompt", question || "What is in this image?");
+    if (image) formData.append("image", image);
+
     try {
-      const res = await axios.post("http://localhost:5000/api/chat", {
-        prompt: currentQuestion,
-      });
-
-      const reply = res.data.response;
-      console.log("📥 Gemini reply:", reply);
-
+      const res = await axios.post("http://localhost:5000/api/chat", formData);
       setChatHistory((prev) => [
         ...prev,
-        { type: "bot", content: reply || "No reply received." },
+        { type: "bot", content: res.data.response },
       ]);
     } catch (err) {
-      console.error("❌ API error:", err.message || err);
+      console.error(err);
       setChatHistory((prev) => [
         ...prev,
         {
@@ -82,6 +90,8 @@ const Chatbot = () => {
       ]);
     }
 
+    setQuestion("");
+    setImage(null);
     setGeneratingAnswer(false);
   };
 
@@ -89,8 +99,8 @@ const Chatbot = () => {
     <div className="min-h-screen bg-gray-900 text-white flex justify-center items-center p-4">
       <div className="w-full max-w-xl bg-zinc-800 rounded-lg shadow-lg">
         <div className="text-center p-4 border-b border-gray-700 text-teal-400">
-          <h2 className="text-2xl font-bold">Gemini Chatbot</h2>
-          <p className="text-sm">Chat in English using text or voice</p>
+          <h2 className="text-2xl font-bold">Smart Chatbot</h2>
+          <p className="text-sm">Talk or upload an image to ask anything</p>
         </div>
 
         <div
@@ -111,12 +121,21 @@ const Chatbot = () => {
                     : "bg-gray-700 text-teal-100"
                 }`}
               >
-                {msg.type === "user" && msg.content}
-                {msg.type === "bot" && msg.content && (
-                  <span dangerouslySetInnerHTML={{ __html: marked.parse(msg.content) }} />
+                {msg.imagePreview && (
+                  <img
+                    src={msg.imagePreview}
+                    alt="uploaded"
+                    className="mb-2 rounded max-h-40"
+                  />
                 )}
-                {msg.type === "bot" && !msg.content && (
-                  <span className="text-red-400">[No content]</span>
+                {msg.type === "user" ? (
+                  msg.content
+                ) : (
+                  <span
+                    dangerouslySetInnerHTML={{
+                      __html: marked.parse(msg.content || "[No content]"),
+                    }}
+                  />
                 )}
               </div>
             </div>
@@ -127,29 +146,33 @@ const Chatbot = () => {
           )}
         </div>
 
-        <form onSubmit={handleSubmit} className="p-4 border-t border-gray-700">
-          <div className="flex gap-2">
-            <textarea
-              value={question}
-              onChange={(e) => setQuestion(e.target.value)}
-              placeholder="Type your message..."
-              rows={2}
-              disabled={generatingAnswer}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) {
-                  e.preventDefault();
-                  handleSubmit(e);
-                }
-              }}
-              className="flex-1 p-2 rounded-md bg-zinc-700 border border-zinc-600 text-white resize-none focus:outline-none focus:ring focus:border-teal-500"
-            />
-            <button
-              type="submit"
-              disabled={generatingAnswer}
-              className="bg-emerald-600 px-4 py-2 rounded hover:bg-emerald-500"
+        <form
+          onSubmit={handleSubmit}
+          className="p-4 border-t border-gray-700 space-y-2"
+        >
+          <textarea
+            value={question}
+            onChange={(e) => setQuestion(e.target.value)}
+            placeholder="Type your question or describe the image..."
+            rows={2}
+            disabled={generatingAnswer}
+            className="w-full p-2 rounded bg-zinc-700 text-white border border-zinc-600"
+          />
+          <div className="flex items-center gap-2">
+            <label
+              htmlFor="imageUpload"
+              className="bg-purple-700 p-2 rounded cursor-pointer"
             >
-              Send
-            </button>
+              <ImageIcon size={16} />
+            </label>
+            <input
+              type="file"
+              id="imageUpload"
+              accept="image/*"
+              className="hidden"
+              onChange={handleImageChange}
+            />
+
             <button
               type="button"
               onClick={handleVoiceInput}
@@ -159,6 +182,14 @@ const Chatbot = () => {
               }`}
             >
               <Mic size={18} />
+            </button>
+
+            <button
+              type="submit"
+              disabled={generatingAnswer}
+              className="ml-auto bg-emerald-600 px-4 py-2 rounded hover:bg-emerald-500"
+            >
+              Send
             </button>
           </div>
         </form>
