@@ -46,7 +46,7 @@ const Home = () => {
         <div className="px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
-              <h1 className="text-2xl font-bold text-blue-600">VarsityX</h1>
+              <h1 className="text-2xl font-bold text-blue-600">Varsityx</h1>
             </div>
 
             <div className="flex items-center space-x-4">
@@ -75,7 +75,7 @@ const Home = () => {
         {/* Welcome Section */}
         <div className="mb-8">
           <h1 className="text-4xl font-bold mb-2">
-            Welcome to VarsityX! 🎓
+            Welcome to Varsityx! 🎓
           </h1>
           <p className="text-gray-600 dark:text-gray-300">The trusted marketplace for students to buy, sell, and connect</p>
         </div>

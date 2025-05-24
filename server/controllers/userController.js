@@ -71,48 +71,88 @@ export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    const user = await User.findOne({ email });
-    if (!user) {
-      return res.status(400).json({ 
+    // Validate input
+    if (!email || !password) {
+      return res.status(400).json({
         success: false,
-        message: 'Invalid credentials' 
+        message: 'Please provide email and password'
       });
     }
 
+    // Find user and explicitly select password field
+    const user = await User.findOne({ email }).select('+password');
+    
+    if (!user) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid credentials'
+      });
+    }
+
+    // Check if user is suspended
+    if (user.isSuspended) {
+      return res.status(403).json({
+        success: false,
+        message: 'Your account has been suspended',
+        reason: user.suspensionReason
+      });
+    }
+
+    // Verify password exists
+    if (!user.password) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid credentials'
+      });
+    }
+
+    // Compare password
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-      return res.status(400).json({ 
+      return res.status(401).json({
         success: false,
-        message: 'Invalid credentials' 
+        message: 'Invalid credentials'
       });
     }
 
+    // Check if JWT_SECRET is set
+    if (!process.env.JWT_SECRET) {
+      console.error('JWT_SECRET is not set');
+      return res.status(500).json({
+        success: false,
+        message: 'Internal server error'
+      });
+    }
+
+    // Generate token
     const token = jwt.sign(
-      { 
-        userId: user._id, 
-        role: user.role 
+      {
+        userId: user._id,
+        role: user.role
       },
       process.env.JWT_SECRET,
       { expiresIn: '1h' }
     );
 
-    // Omit password in response
+    // Prepare user response without sensitive data
     const userResponse = user.toObject();
     delete userResponse.password;
 
-    res.json({ 
+    res.json({
       success: true,
       token,
-      user: userResponse 
+      user: userResponse
     });
   } catch (err) {
-    res.status(500).json({ 
+    console.error('Login error:', err);
+    res.status(500).json({
       success: false,
       message: 'Login failed',
-      error: process.env.NODE_ENV === "development" ? err.message : undefined
+      error: process.env.NODE_ENV === 'development' ? err.message : 'Internal server error'
     });
   }
 };
+
 // Google OAuth Callback Logic
 export const googleOAuth = (req, res) => {
   const token = jwt.sign(

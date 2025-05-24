@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../../context/ThemeContext';
@@ -85,31 +84,33 @@ const SellPage = () => {
       // Upload each file and get URLs
       const uploadPromises = files.map(async (file) => {
         const formData = new FormData();
-        formData.append('file', file); // Use 'file' as field name to match backend
+        formData.append('file', file);
         
         const response = await axios.post(
-          'http://localhost:5000/upload/file/upload', 
+          'http://localhost:5000/images/upload', 
           formData, 
           {
             headers: {
               'Content-Type': 'multipart/form-data',
               Authorization: `Bearer ${token}`
-            }
+            },
+            timeout: 30000 // 30 second timeout
           }
         );
         
-        return response.data; // This should be the image URL
+        // Return the complete URL for the image
+        return response.data.file;
       });
 
       const uploadedUrls = await Promise.all(uploadPromises);
       
       // Add URLs to both preview and final URL arrays
       setImageUrls(prev => [...prev, ...uploadedUrls]);
-      setImages(prev => [...prev, ...uploadedUrls]); // Use the server URLs for preview too
+      setImages(prev => [...prev, ...uploadedUrls.map(url => `http://localhost:5000/images/${url}`)]);
       
     } catch (err) {
       console.error('Upload error:', err);
-      setError(err.response?.data?.message || 'Failed to upload images');
+      setError(err.response?.data?.message || 'Failed to upload images. Please try again.');
     } finally {
       setLoading(false);
     }

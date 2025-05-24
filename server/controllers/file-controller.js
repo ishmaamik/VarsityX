@@ -1,15 +1,41 @@
 import path from 'path';
 import fs from 'fs';
 
-const url = 'http://localhost:5000';
+const url = process.env.SERVER_URL || 'http://localhost:5000';
 
 export const uploadFile = (request, response) => {
-    if(!request.file) 
-        return response.status(404).json("File not found");
-    
-    const imageUrl = `${request.file.filename}`;
-    response.status(200).json(imageUrl);    
-}
+    try {
+        if (!request.file) {
+            return response.status(400).json({
+                success: false,
+                message: "No file uploaded"
+            });
+        }
+
+        // Check if file was actually saved
+        const filePath = path.join(process.cwd(), 'uploads', request.file.filename);
+        if (!fs.existsSync(filePath)) {
+            return response.status(500).json({
+                success: false,
+                message: "File upload failed"
+            });
+        }
+
+        const imageUrl = `${url}/upload/file/${request.file.filename}`;
+        
+        response.status(200).json({
+            success: true,
+            filename: request.file.filename,
+            url: imageUrl
+        });
+    } catch (error) {
+        console.error('File upload error:', error);
+        response.status(500).json({
+            success: false,
+            message: error.message || "Error uploading file"
+        });
+    }
+};
 
 export const getFile = async (request, response) => {
     try {   
@@ -17,11 +43,18 @@ export const getFile = async (request, response) => {
         const filePath = path.join(process.cwd(), 'uploads', filename);
         
         if (!fs.existsSync(filePath)) {
-            return response.status(404).json({ msg: 'File not found' });
+            return response.status(404).json({
+                success: false,
+                message: 'File not found'
+            });
         }
 
         response.sendFile(filePath);
     } catch (error) {
-        response.status(500).json({ msg: error.message });
+        console.error('File retrieval error:', error);
+        response.status(500).json({
+            success: false,
+            message: error.message || "Error retrieving file"
+        });
     }
-}
+};

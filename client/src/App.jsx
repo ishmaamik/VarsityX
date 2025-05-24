@@ -18,6 +18,7 @@ import Messages from "./pages/Messages";
 import CampusNavigation from "./components/CampusNavigation";
 import ImageUploader from "./components/ImageUploader";
 import PriceAdvisorPage from "./pages/PriceAdvisorPage";
+import AdminPanel from "./pages/AdminPanel";
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
@@ -127,6 +128,17 @@ function AppContent() {
                 <BuyPage />
               </Layout>
             </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/admin"
+          element={
+            <div className="flex h-screen overflow-hidden bg-gray-100 dark:bg-gray-900">
+              <div className={`flex-1 overflow-auto transition-all duration-300`}>
+                <AdminPanel />
+              </div>
+            </div>
           }
         />
 

@@ -11,58 +11,89 @@ import cartRoutes from './routes/cartRoutes.js';
 import orderRoutes from './routes/orderRoutes.js';
 import reviewRoutes from './routes/reviewRoutes.js';
 import uploadRoutes from './routes/uploadRoutes.js';
+import gridfsRoutes from './routes/gridfsRoutes.js';
 import priceAdvisorRoutes from './routes/priceAdvisorRoutes.js';
 import messageRoutes from './routes/messageRoutes.js';
 import './config/passport.js';  // Passport configuration for Google OAuth
 import { createServer } from 'http';
 import initializeSocket from './config/socket.js';
+import transactionRoutes from './routes/transactionRoutes.js';
+import  checkSuspension  from './middleware/checkSuspension.js';
+import morgan from 'morgan';
+import errorHandler from './middleware/error.js';
+import fs from 'fs';
+import path from 'path';
 
 dotenv.config();
 
 const app = express();
 const httpServer = createServer(app);
-const io = initializeSocket(httpServer);
+
+// Ensure uploads directory exists
+const uploadsDir = path.join(process.cwd(), 'uploads');
+if (!fs.existsSync(uploadsDir)){
+    fs.mkdirSync(uploadsDir, { recursive: true });
+}
 
 // Middleware
 const corsOptions = {
-  origin: 'http://localhost:5173', 
-  credentials: true, 
-  methods: ['GET', 'POST', 'PUT', 'DELETE'], 
-  allowedHeaders: ['Content-Type', 'Authorization'] 
+  origin: process.env.CLIENT_URL || 'http://localhost:5173',
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 };
 
 app.use(cors(corsOptions));
 app.use(express.json());
-app.use(passport.initialize());  
+app.use(passport.initialize());
+
+// Dev logging middleware
+if (process.env.NODE_ENV === 'development') {
+  app.use(morgan('dev'));
+}
 
 // Serve static files from uploads directory
 app.use('/upload/file', express.static('uploads'));
 
-// Attach io to request object
-app.use((req, res, next) => {
-  req.io = io;
-  next();
-});
-
-app.use('/user', userRoutes); 
-
-app.use('/admin', adminRoutes); 
-app.use('/marketplace', marketplaceRoutes);
-app.use('/cart', cartRoutes);
-app.use('/orders', orderRoutes);
-app.use('/reviews', reviewRoutes);
-app.use('/upload', uploadRoutes);
-app.use('/api/price-advisor', priceAdvisorRoutes);
-app.use('/api/messages', messageRoutes);
-
 // MongoDB connection
-mongoose.connect(process.env.MONGO_URI).then(() => console.log('MongoDB connected'))
-  .catch(err => console.log(err));
+mongoose.connect(process.env.MONGO_URI)
+  .then(() => {
+    console.log('MongoDB Connected...');
+    
+    // Initialize Socket.io after MongoDB connection
+    const io = initializeSocket(httpServer);
+    
+    // Attach io to request object
+    app.use((req, res, next) => {
+      req.io = io;
+      next();
+    });
 
-// Home route
-app.get('/', (req, res) => res.send('DestiNova API Running'));
+    // Routes
+    app.use('/user', userRoutes);
+    app.use('/admin', adminRoutes);
+    app.use('/marketplace', marketplaceRoutes);
+    app.use('/cart', cartRoutes);
+    app.use('/orders', orderRoutes);
+    app.use('/reviews', reviewRoutes);
+    app.use('/upload', uploadRoutes);
+    app.use('/images', gridfsRoutes);
+    app.use('/api/price-advisor', priceAdvisorRoutes);
+    app.use('/api/messages', messageRoutes);
+    app.use('/api/transactions', transactionRoutes);
 
-const PORT = process.env.PORT || 5000;
-httpServer.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+    // Add suspension check after authentication
+    app.use(checkSuspension);
+
+    // Error handler
+    app.use(errorHandler);
+
+    // Start server
+    httpServer.listen(process.env.PORT || 5000, () => {
+      console.log(`Server is running on port ${process.env.PORT || 5000}`);
+    });
+  })
+  .catch(err => {
+    console.error('Error connecting to MongoDB:', err.message);
+    process.exit(1);
+  });

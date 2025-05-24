@@ -142,7 +142,7 @@ const Sidebar = ({ open, setOpen }) => {
               !open && "scale-0"
             }`}
           >
-            VarsityX
+            Varsityx
           </h1>
         </div>
         <button

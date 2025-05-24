@@ -1,33 +1,49 @@
-
 import Listing from '../models/Listing.js';
 import User from '../models/User.js';
 
 // Create a new listing
 export const createListing = async (req, res) => {
   try {
-    const { title, description, price, category, condition, university, images, priceType, visibility } = req.body;
+    const { 
+      title, 
+      description, 
+      category, 
+      condition, 
+      university, 
+      images, 
+      priceType, 
+      visibility,
+      price,
+      startingBid,
+      hourlyRate
+    } = req.body;
+    
     const seller = req.user.userId;
 
-    const newListing = new Listing({
+    // Create listing object based on price type
+    const listingData = {
       title,
       description,
-      price,
-      priceType,
       category,
       condition,
       university,
       images,
       visibility,
-      seller
-    });
+      seller,
+      priceType
+    };
 
-    if (priceType === 'bidding') {
-      newListing.startingBid = price;
-      newListing.currentBid = price;
+    // Add appropriate price field based on price type
+    if (priceType === 'fixed') {
+      listingData.price = Number(price);
+    } else if (priceType === 'bidding') {
+      listingData.startingBid = Number(startingBid);
+      listingData.currentBid = Number(startingBid);
     } else if (priceType === 'hourly') {
-      newListing.hourlyRate = price;
+      listingData.hourlyRate = Number(hourlyRate);
     }
 
+    const newListing = new Listing(listingData);
     const savedListing = await newListing.save();
 
     // Add listing to user's listings
@@ -40,10 +56,10 @@ export const createListing = async (req, res) => {
       listing: savedListing
     });
   } catch (err) {
+    console.error('Error creating listing:', err);
     res.status(500).json({
       success: false,
-      message: 'Failed to create listing',
-      error: err.message
+      message: err.message || 'Failed to create listing'
     });
   }
 };
