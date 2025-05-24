@@ -3,8 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../../context/ThemeContext';
 import { 
   Book, Laptop, Bike, GraduationCap, MessageSquare, 
-  Image, X, ChevronDown, DollarSign, Clock, Gavel, Eye, EyeOff, Moon, Sun
+  Image, X, ChevronDown, DollarSign, Clock, Gavel, Eye, EyeOff, Moon, Sun, Loader
 } from 'lucide-react';
+import axios from 'axios';
 
 const SellPage = () => {
   const navigate = useNavigate();
@@ -23,6 +24,9 @@ const SellPage = () => {
   });
 
   const [images, setImages] = useState([]);
+  const [imageFiles, setImageFiles] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   const categories = [
     { value: 'textbooks', label: 'Textbooks', icon: <Book size={18} /> },
@@ -40,21 +44,81 @@ const SellPage = () => {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleImageUpload = (e) => {
+  const handleImageUpload = async (e) => {
     const files = Array.from(e.target.files);
-    // In a real app, you would upload to a server
-    setImages(prev => [...prev, ...files.map(file => URL.createObjectURL(file))]);
+    if (files.length + images.length > 6) {
+      setError('You can upload a maximum of 6 images');
+      return;
+    }
+
+    // Store the actual files for upload
+    setImageFiles(prev => [...prev, ...files]);
+
+    // Create preview URLs
+    const previewUrls = files.map(file => URL.createObjectURL(file));
+    setImages(prev => [...prev, ...previewUrls]);
   };
 
   const removeImage = (index) => {
     setImages(prev => prev.filter((_, i) => i !== index));
+    setImageFiles(prev => prev.filter((_, i) => i !== index));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log('Form submitted:', formData, images);
-    // Submit to backend in real app
-    navigate('/marketplace');
+    setLoading(true);
+    setError(null);
+
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        navigate('/login');
+        return;
+      }
+
+      // Upload images first
+      const uploadedImages = [];
+      for (const file of imageFiles) {
+        const formData = new FormData();
+        formData.append('image', file);
+        
+        const response = await axios.post('http://localhost:5000/upload', formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+            Authorization: `Bearer ${token}`
+          }
+        });
+        uploadedImages.push(response.data.imageUrl);
+      }
+
+      // Prepare listing data
+      const listingData = {
+        ...formData,
+        images: uploadedImages
+      };
+
+      // Adjust pricing fields based on priceType
+      if (formData.priceType === 'fixed') {
+        listingData.price = Number(formData.price);
+      } else if (formData.priceType === 'bidding') {
+        listingData.startingBid = Number(formData.startingBid);
+        listingData.currentBid = Number(formData.startingBid);
+      } else if (formData.priceType === 'hourly') {
+        listingData.hourlyRate = Number(formData.hourlyRate);
+      }
+
+      // Create the listing
+      await axios.post('http://localhost:5000/marketplace', listingData, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      navigate('/marketplace');
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to create listing');
+      console.error('Error creating listing:', err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -71,6 +135,12 @@ const SellPage = () => {
           </button>
         </div>
         
+        {error && (
+          <div className="mb-4 p-3 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded-lg">
+            {error}
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
           {/* Category Selection */}
           <div className="mb-6">
@@ -81,6 +151,7 @@ const SellPage = () => {
                 value={formData.category}
                 onChange={handleChange}
                 className="w-full p-3 border rounded-lg appearance-none bg-white dark:bg-gray-700 dark:text-white"
+                required
               >
                 {categories.map(cat => (
                   <option key={cat.value} value={cat.value}>
@@ -116,6 +187,7 @@ const SellPage = () => {
               rows={4}
               className="w-full p-3 border rounded-lg bg-white dark:bg-gray-700 dark:text-white"
               placeholder="Provide details about your item or service..."
+              required
             />
           </div>
 
@@ -166,7 +238,7 @@ const SellPage = () => {
               <div className="mb-4">
                 <label className="block text-gray-700 dark:text-gray-300 font-medium mb-2">Price</label>
                 <div className="relative">
-                  <span className="absolute left-3 top-1/2 transform -translate-y-1/2">$</span>
+                  <span className="absolute left-3 top-1/2 transform -translate-y-1/2">৳</span>
                   <input
                     type="number"
                     name="price"
@@ -174,6 +246,9 @@ const SellPage = () => {
                     onChange={handleChange}
                     placeholder="0.00"
                     className="w-full pl-8 pr-4 py-2 border rounded-lg bg-white dark:bg-gray-700 dark:text-white"
+                    min="0"
+                    step="0.01"
+                    required
                   />
                 </div>
               </div>
@@ -183,7 +258,7 @@ const SellPage = () => {
               <div className="mb-4">
                 <label className="block text-gray-700 dark:text-gray-300 font-medium mb-2">Starting Bid</label>
                 <div className="relative">
-                  <span className="absolute left-3 top-1/2 transform -translate-y-1/2">$</span>
+                  <span className="absolute left-3 top-1/2 transform -translate-y-1/2">৳</span>
                   <input
                     type="number"
                     name="startingBid"
@@ -191,6 +266,9 @@ const SellPage = () => {
                     onChange={handleChange}
                     placeholder="0.00"
                     className="w-full pl-8 pr-4 py-2 border rounded-lg bg-white dark:bg-gray-700 dark:text-white"
+                    min="0"
+                    step="0.01"
+                    required
                   />
                 </div>
               </div>
@@ -200,7 +278,7 @@ const SellPage = () => {
               <div className="mb-4">
                 <label className="block text-gray-700 dark:text-gray-300 font-medium mb-2">Hourly Rate</label>
                 <div className="relative">
-                  <span className="absolute left-3 top-1/2 transform -translate-y-1/2">$</span>
+                  <span className="absolute left-3 top-1/2 transform -translate-y-1/2">৳</span>
                   <input
                     type="number"
                     name="hourlyRate"
@@ -208,6 +286,9 @@ const SellPage = () => {
                     onChange={handleChange}
                     placeholder="0.00"
                     className="w-full pl-8 pr-4 py-2 border rounded-lg bg-white dark:bg-gray-700 dark:text-white"
+                    min="0"
+                    step="0.01"
+                    required
                   />
                 </div>
               </div>
@@ -254,6 +335,7 @@ const SellPage = () => {
                 value={formData.university}
                 onChange={handleChange}
                 className="w-full p-3 border rounded-lg appearance-none bg-white dark:bg-gray-700 dark:text-white"
+                required
               >
                 {universities.map(uni => (
                   <option key={uni} value={uni}>{uni}</option>
@@ -329,11 +411,19 @@ const SellPage = () => {
           {/* Submit Button */}
           <button
             type="submit"
-            className="w-full py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800"
+            disabled={loading}
+            className="w-full py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800 disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center"
           >
-            Publish Listing
+            {loading ? (
+              <>
+                <Loader className="animate-spin mr-2" size={18} />
+                Publishing...
+              </>
+            ) : (
+              'Publish Listing'
+            )}
           </button>
-        </form>
+          </form>
       </div>
     </div>
   );

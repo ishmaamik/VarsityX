@@ -1,54 +1,157 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useTheme } from '../../context/ThemeContext';
 import { 
   ArrowLeft, MapPin, MessageSquare, Shield, User, Star, 
-  ChevronDown, DollarSign, Gavel, Clock, ShoppingCart, Moon, Sun
+  ChevronDown, DollarSign, Gavel, Clock, ShoppingCart, Moon, Sun, Loader
 } from 'lucide-react';
+import axios from 'axios';
 
 const ListingDetail = () => {
+  const { id } = useParams();
   const navigate = useNavigate();
   const { darkMode, toggleDarkMode } = useTheme();
   const [activeTab, setActiveTab] = useState('details');
   const [quantity, setQuantity] = useState(1);
   const [bidAmount, setBidAmount] = useState('');
+  const [listing, setListing] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [cartItems, setCartItems] = useState([]);
 
-  // Sample listing data with different pricing types
-  const listing = {
-    id: 1,
-    title: 'Calculus Textbook',
-    priceType: 'fixed', // 'fixed', 'bidding', or 'hourly'
-    price: 25,
-    startingBid: 20,
-    currentBid: 22,
-    hourlyRate: 15,
-    category: 'textbooks',
-    condition: 'Like New',
-    description: 'Calculus: Early Transcendentals (8th Edition) by James Stewart. Used for one semester, no markings or highlights.',
-    seller: {
-      name: 'John Doe',
-      university: 'IUT',
-      rating: 4.8,
-      listings: 12,
-      memberSince: '2022'
-    },
-    images: [
-      'textbook1.jpg',
-      'textbook2.jpg',
-      'textbook3.jpg'
-    ],
-    posted: '3 days ago',
-    bids: [
-      { id: 1, bidder: 'Alice', amount: 22, time: '2 hours ago' },
-      { id: 2, bidder: 'Bob', amount: 21, time: '5 hours ago' }
-    ]
-  };
+  // Fetch listing details
+  useEffect(() => {
+    const fetchListing = async () => {
+      try {
+        setLoading(true);
+        const response = await axios.get(`http://localhost:5000/marketplace/${id}`);
+        setListing(response.data.listing);
+      } catch (err) {
+        setError(err.response?.data?.message || 'Failed to fetch listing');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchListing();
+  }, [id]);
 
-  const handlePlaceBid = (e) => {
+  // Load cart items
+  useEffect(() => {
+    const fetchCart = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        if (token) {
+          const response = await axios.get('http://localhost:5000/cart', {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          setCartItems(response.data.cart);
+        } else {
+          const savedCart = localStorage.getItem('cartItems');
+          if (savedCart) setCartItems(JSON.parse(savedCart));
+        }
+      } catch (err) {
+        console.error('Error fetching cart:', err);
+      }
+    };
+    fetchCart();
+  }, []);
+
+  // Place a bid
+  const handlePlaceBid = async (e) => {
     e.preventDefault();
-    console.log('Bid placed:', bidAmount);
-    // In a real app, this would submit to your backend
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        navigate('/login');
+        return;
+      }
+      
+      await axios.post(`http://localhost:5000/marketplace/${id}/bid`, 
+        { amount: bidAmount },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      
+      // Update local state
+      setListing(prev => ({
+        ...prev,
+        currentBid: bidAmount,
+        bids: [
+          ...prev.bids,
+          {
+            bidder: { _id: localStorage.getItem('userId'), displayName: localStorage.getItem('username') },
+            amount: bidAmount,
+            time: new Date().toISOString()
+          }
+        ]
+      }));
+      
+      setBidAmount('');
+    } catch (err) {
+      console.error('Error placing bid:', err);
+    }
   };
+
+  // Add to cart
+  const addToCart = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (token) {
+        await axios.post('http://localhost:5000/cart', 
+          { listingId: listing._id, quantity },
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        // Update local state
+        setCartItems(prev => {
+          const existing = prev.find(item => item.listing._id === listing._id);
+          if (existing) {
+            return prev.map(item => 
+              item.listing._id === listing._id 
+                ? { ...item, quantity: item.quantity + quantity } 
+                : item
+            );
+          }
+          return [...prev, { listing, quantity }];
+        });
+      } else {
+        // For guest users
+        const updated = [...cartItems];
+        const existing = updated.find(item => item._id === listing._id);
+        if (existing) {
+          existing.quantity += quantity;
+        } else {
+          updated.push({ ...listing, quantity });
+        }
+        setCartItems(updated);
+        localStorage.setItem('cartItems', JSON.stringify(updated));
+      }
+    } catch (err) {
+      console.error('Error adding to cart:', err);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+        <Loader className="animate-spin" size={32} />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+        <p className="text-red-500 dark:text-red-400">{error}</p>
+      </div>
+    );
+  }
+
+  if (!listing) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+        <p className="text-gray-500 dark:text-gray-400">Listing not found</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -74,14 +177,20 @@ const ListingDetail = () => {
           {/* Image Gallery */}
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden">
             <div className="h-96 bg-gray-200 dark:bg-gray-700 overflow-hidden">
-              <img 
-                src={listing.images[0]} 
-                alt={listing.title}
-                className="w-full h-full object-contain"
-              />
+              {listing.images?.[0] ? (
+                <img 
+                  src={listing.images[0]} 
+                  alt={listing.title}
+                  className="w-full h-full object-contain"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-gray-400">
+                  <Image size={48} />
+                </div>
+              )}
             </div>
             <div className="grid grid-cols-3 gap-2 p-2">
-              {listing.images.map((img, index) => (
+              {listing.images?.map((img, index) => (
                 <div key={index} className="h-24 bg-gray-100 dark:bg-gray-700 overflow-hidden cursor-pointer">
                   <img 
                     src={img} 
@@ -106,7 +215,7 @@ const ListingDetail = () => {
               {/* Dynamic Pricing Display */}
               {listing.priceType === 'fixed' && (
                 <div className="flex items-center mb-4">
-                  <span className="text-3xl font-bold text-blue-600 dark:text-blue-400 mr-2">${listing.price}</span>
+                  <span className="text-3xl font-bold text-blue-600 dark:text-blue-400 mr-2">৳{listing.price}</span>
                   {listing.condition && (
                     <span className="text-gray-600 dark:text-gray-300">({listing.condition})</span>
                   )}
@@ -117,11 +226,11 @@ const ListingDetail = () => {
                 <div className="mb-4">
                   <div className="flex items-center mb-2">
                     <span className="text-2xl font-bold text-blue-600 dark:text-blue-400 mr-2">
-                      Current Bid: ${listing.currentBid}
+                      Current Bid: ৳{listing.currentBid}
                     </span>
                   </div>
                   <p className="text-sm text-gray-600 dark:text-gray-300">
-                    Starting bid: ${listing.startingBid} • {listing.bids.length} bids
+                    Starting bid: ৳{listing.startingBid} • {listing.bids?.length || 0} bids
                   </p>
                 </div>
               )}
@@ -129,16 +238,16 @@ const ListingDetail = () => {
               {listing.priceType === 'hourly' && (
                 <div className="flex items-center mb-4">
                   <span className="text-2xl font-bold text-blue-600 dark:text-blue-400 mr-2">
-                    ${listing.hourlyRate}/hour
+                    ৳{listing.hourlyRate}/hour
                   </span>
                 </div>
               )}
 
               <div className="flex items-center text-gray-600 dark:text-gray-300 mb-6">
                 <MapPin size={16} className="mr-1" />
-                <span>{listing.seller.university}</span>
+                <span>{listing.university}</span>
                 <span className="mx-2">•</span>
-                <span>Posted {listing.posted}</span>
+                <span>Posted {new Date(listing.createdAt).toLocaleDateString()}</span>
               </div>
 
               {/* Quantity Selector (for fixed price items) */}
@@ -169,12 +278,12 @@ const ListingDetail = () => {
                   <label className="block text-gray-700 dark:text-gray-300 font-medium mb-2">Place Your Bid</label>
                   <div className="flex">
                     <div className="relative flex-grow mr-2">
-                      <span className="absolute left-3 top-1/2 transform -translate-y-1/2">$</span>
+                      <span className="absolute left-3 top-1/2 transform -translate-y-1/2">৳</span>
                       <input
                         type="number"
                         value={bidAmount}
                         onChange={(e) => setBidAmount(e.target.value)}
-                        placeholder={`Minimum $${listing.currentBid + 1}`}
+                        placeholder={`Minimum ৳${listing.currentBid + 1}`}
                         min={listing.currentBid + 1}
                         className="w-full pl-8 pr-4 py-2 border rounded-lg dark:bg-gray-700 dark:text-white"
                         required
@@ -190,10 +299,13 @@ const ListingDetail = () => {
                 </form>
               )}
 
-              {/* Action Buttons */}
-              <div className="space-y-3">
+                            {/* Action Buttons */}
+                            <div className="space-y-3">
                 {listing.priceType === 'fixed' && (
-                  <button className="w-full py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800">
+                  <button 
+                    onClick={addToCart}
+                    className="w-full py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800"
+                  >
                     <ShoppingCart className="inline mr-2" size={18} />
                     Add to Cart
                   </button>
@@ -212,23 +324,26 @@ const ListingDetail = () => {
                   <User size={24} className="text-gray-600 dark:text-gray-300" />
                 </div>
                 <div>
-                  <h3 className="font-bold dark:text-white">{listing.seller.name}</h3>
+                  <h3 className="font-bold dark:text-white">{listing.seller.displayName}</h3>
                   <div className="flex items-center text-sm text-gray-600 dark:text-gray-300">
                     <Star className="text-yellow-500 mr-1" size={14} />
-                    <span>{listing.seller.rating}</span>
+                    <span>{listing.seller.rating || 'No ratings'}</span>
                     <span className="mx-2">•</span>
-                    <span>{listing.seller.listings} listings</span>
+                    <span>{listing.seller.listings?.length || 0} listings</span>
                   </div>
                 </div>
               </div>
               <div className="text-sm text-gray-600 dark:text-gray-300 mb-4">
-                <p>Member since {listing.seller.memberSince}</p>
+                <p>Member since {new Date(listing.seller.createdAt).getFullYear()}</p>
                 <p className="flex items-center">
                   <Shield className="mr-1" size={14} />
                   <span>University verified</span>
                 </p>
               </div>
-              <button className="w-full py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 dark:text-white">
+              <button 
+                onClick={() => navigate(`/profile/${listing.seller._id}`)}
+                className="w-full py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 dark:text-white"
+              >
                 View Profile
               </button>
             </div>
@@ -257,7 +372,7 @@ const ListingDetail = () => {
                     : 'text-gray-600 dark:text-gray-300'
                 }`}
               >
-                Bids ({listing.bids.length})
+                Bids ({listing.bids?.length || 0})
               </button>
             )}
             <button
@@ -287,12 +402,14 @@ const ListingDetail = () => {
                   {listing.condition && (
                     <div>
                       <p className="text-gray-600 dark:text-gray-400">Condition</p>
-                      <p className="font-medium dark:text-white">{listing.condition}</p>
+                      <p className="font-medium dark:text-white">
+                        {listing.condition.charAt(0).toUpperCase() + listing.condition.slice(1)}
+                      </p>
                     </div>
                   )}
                   <div>
                     <p className="text-gray-600 dark:text-gray-400">Seller University</p>
-                    <p className="font-medium dark:text-white">{listing.seller.university}</p>
+                    <p className="font-medium dark:text-white">{listing.university}</p>
                   </div>
                   <div>
                     <p className="text-gray-600 dark:text-gray-400">Pricing Type</p>
@@ -307,13 +424,15 @@ const ListingDetail = () => {
               <div>
                 <h3 className="font-bold mb-4 dark:text-white">Current Bids</h3>
                 <div className="space-y-3">
-                  {listing.bids.map(bid => (
-                    <div key={bid.id} className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                  {listing.bids?.map((bid, index) => (
+                    <div key={index} className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
                       <div>
-                        <p className="font-medium dark:text-white">{bid.bidder}</p>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">{bid.time}</p>
+                        <p className="font-medium dark:text-white">{bid.bidder.displayName}</p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">
+                          {new Date(bid.time).toLocaleString()}
+                        </p>
                       </div>
-                      <span className="text-lg font-bold text-blue-600 dark:text-blue-400">${bid.amount}</span>
+                      <span className="text-lg font-bold text-blue-600 dark:text-blue-400">৳{bid.amount}</span>
                     </div>
                   ))}
                 </div>
