@@ -1,14 +1,16 @@
-
 import Review from '../models/Review.js';
 import Listing from '../models/Listing.js';
 import User from '../models/User.js';
+import mongoose from 'mongoose';
 
-// Create a review
+// Create a new review
 export const createReview = async (req, res) => {
   try {
-    const { listingId, rating, comment } = req.body;
-    
-    // Check if listing exists
+    const { listingId } = req.params;
+    const { rating, comment } = req.body;
+    const reviewerId = req.user.userId;
+
+    // Validate listing exists
     const listing = await Listing.findById(listingId);
     if (!listing) {
       return res.status(404).json({
@@ -16,61 +18,41 @@ export const createReview = async (req, res) => {
         message: 'Listing not found'
       });
     }
-    
-    // Check if user has purchased this listing
-    const hasPurchased = await Order.exists({
-      buyer: req.user.userId,
-      'items.listing': listingId,
-      status: 'completed'
-    });
-    
-    if (!hasPurchased) {
-      return res.status(403).json({
-        success: false,
-        message: 'You can only review items you have purchased'
-      });
-    }
-    
+
     // Check if user has already reviewed this listing
     const existingReview = await Review.findOne({
       listing: listingId,
-      reviewer: req.user.userId
+      reviewer: reviewerId
     });
-    
+
     if (existingReview) {
       return res.status(400).json({
         success: false,
         message: 'You have already reviewed this listing'
       });
     }
-    
-    const newReview = new Review({
+
+    // Create new review
+    const review = new Review({
       listing: listingId,
-      reviewer: req.user.userId,
+      reviewer: reviewerId,
       rating,
       comment
     });
-    
-    await newReview.save();
-    
-    // Add review to listing
-    listing.reviews.push(newReview._id);
-    await listing.save();
-    
-    // Update seller's rating
-    await User.findByIdAndUpdate(listing.seller, {
-      $inc: { ratingCount: 1, ratingSum: rating }
-    });
-    
+
+    await review.save();
+    await review.populate('reviewer', 'displayName photo');
+
     res.status(201).json({
       success: true,
-      review: newReview
+      data: review
     });
-  } catch (err) {
+  } catch (error) {
+    console.error('Error creating review:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to create review',
-      error: err.message
+      message: 'Error creating review',
+      error: error.message
     });
   }
 };
@@ -78,18 +60,22 @@ export const createReview = async (req, res) => {
 // Get reviews for a listing
 export const getListingReviews = async (req, res) => {
   try {
-    const reviews = await Review.find({ listing: req.params.listingId })
-      .populate('reviewer', 'displayName photo');
-    
+    const { listingId } = req.params;
+
+    const reviews = await Review.find({ listing: listingId })
+      .populate('reviewer', 'displayName photo')
+      .sort('-createdAt');
+
     res.json({
       success: true,
-      reviews
+      data: reviews
     });
-  } catch (err) {
+  } catch (error) {
+    console.error('Error getting reviews:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to fetch reviews',
-      error: err.message
+      message: 'Error fetching reviews',
+      error: error.message
     });
   }
 };
@@ -97,44 +83,37 @@ export const getListingReviews = async (req, res) => {
 // Update a review
 export const updateReview = async (req, res) => {
   try {
+    const { reviewId } = req.params;
     const { rating, comment } = req.body;
-    const review = await Review.findById(req.params.id);
-    
+
+    const review = await Review.findOne({
+      _id: reviewId,
+      reviewer: req.user.userId
+    });
+
     if (!review) {
       return res.status(404).json({
         success: false,
-        message: 'Review not found'
+        message: 'Review not found or unauthorized'
       });
     }
-    
-    // Check if user is the reviewer
-    if (review.reviewer.toString() !== req.user.userId) {
-      return res.status(403).json({
-        success: false,
-        message: 'Not authorized to update this review'
-      });
-    }
-    
-    // Update rating difference in seller's profile
-    if (rating !== review.rating) {
-      await User.findByIdAndUpdate(review.listing.seller, {
-        $inc: { ratingSum: rating - review.rating }
-      });
-    }
-    
+
     review.rating = rating;
     review.comment = comment;
+
     await review.save();
-    
+    await review.populate('reviewer', 'displayName photo');
+
     res.json({
       success: true,
-      review
+      data: review
     });
-  } catch (err) {
+  } catch (error) {
+    console.error('Error updating review:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to update review',
-      error: err.message
+      message: 'Error updating review',
+      error: error.message
     });
   }
 };
@@ -142,44 +121,30 @@ export const updateReview = async (req, res) => {
 // Delete a review
 export const deleteReview = async (req, res) => {
   try {
-    const review = await Review.findById(req.params.id);
-    
+    const { reviewId } = req.params;
+
+    const review = await Review.findOneAndDelete({
+      _id: reviewId,
+      reviewer: req.user.userId
+    });
+
     if (!review) {
       return res.status(404).json({
         success: false,
-        message: 'Review not found'
+        message: 'Review not found or unauthorized'
       });
     }
-    
-    // Check if user is the reviewer or admin
-    if (review.reviewer.toString() !== req.user.userId && req.user.role !== 'Admin') {
-      return res.status(403).json({
-        success: false,
-        message: 'Not authorized to delete this review'
-      });
-    }
-    
-    // Remove rating from seller's profile
-    await User.findByIdAndUpdate(review.listing.seller, {
-      $inc: { ratingCount: -1, ratingSum: -review.rating }
-    });
-    
-    // Remove review from listing
-    await Listing.findByIdAndUpdate(review.listing, {
-      $pull: { reviews: review._id }
-    });
-    
-    await review.remove();
-    
+
     res.json({
       success: true,
       message: 'Review deleted successfully'
     });
-  } catch (err) {
+  } catch (error) {
+    console.error('Error deleting review:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to delete review',
-      error: err.message
+      message: 'Error deleting review',
+      error: error.message
     });
   }
 };

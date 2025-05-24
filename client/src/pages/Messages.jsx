@@ -11,12 +11,13 @@ import {
   X,
 } from "lucide-react";
 import axios from "axios";
-import { Navigate } from "react-router-dom";
+import { Navigate, useLocation } from "react-router-dom";
 import { io } from "socket.io-client";
 
 const Messages = () => {
+  const location = useLocation();
   const [conversations, setConversations] = useState([]);
-  const [selectedChat, setSelectedChat] = useState(null);
+  const [selectedChat, setSelectedChat] = useState(location.state?.selectedChat || null);
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
