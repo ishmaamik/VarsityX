@@ -7,6 +7,7 @@ import { ThemeProvider } from "./context/ThemeContext";
 import { AnimatePresence } from "framer-motion";
 import Home from "./pages/Home";
 import Sidebar from "./components/Sidebar";
+import PriceAdvisorPage from "./pages/PriceAdvisorPage"; // ✅ adjust path if needed
 
 function AppContent() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -47,6 +48,20 @@ function AppContent() {
             </div>
           </div>
         }/>
+        
+        <Route
+          path="/price-advisor"
+          element={
+            <div className="flex h-screen overflow-hidden">
+              <Sidebar open={sidebarOpen} setOpen={setSidebarOpen} />
+              <div
+                className={`flex-1 overflow-auto transition-all duration-300 ease-in-out`}
+              >
+                <PriceAdvisorPage />
+              </div>
+            </div>
+          }
+        />
       </Routes>
     </AnimatePresence>
   );

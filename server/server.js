@@ -13,10 +13,11 @@ import reviewRoutes from './routes/reviewRoutes.js';
 import uploadRouter from './routes/uploadRoutes.js';
 import './config/passport.js';  // Passport configuration for Google OAuth
 import priceAdvisorRoutes from "./routes/priceAdvisorRoutes.js";
-import paymentRoutes from './routes/paymentRoutes.js';
-import createUploadRouter from './routes/uploadRoutes.js';
+//import paymentRoutes from './routes/paymentRoutes.js';
+//import createUploadRouter from './routes/uploadRoutes.js';
 import { createUpload } from './config/upload.js';
 import './config/passport.js';
+
 
 dotenv.config();
 
@@ -39,7 +40,6 @@ let gfs;
 
 app.use('/admin', adminRoutes); 
 app.use("/api/price-advisor", priceAdvisorRoutes);
-app.use('/api/payment', paymentRoutes);
 
 
 app.use('/marketplace', marketplaceRoutes);
