@@ -36,3 +36,5 @@ yarn-error.log*
 .next/
 .nuxt/
 .cache-loader/
+/server/node_modules
+server/.env

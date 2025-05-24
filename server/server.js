@@ -1,11 +1,11 @@
-// server.js
+// server.js 
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import passport from 'passport';
 import mongoose from 'mongoose';
-import userRoutes from './routes/userRoutes.js';  // Handles User and Admin authentication
 import adminRoutes from './routes/adminRoutes.js';  // Separate Admin routes for admin-specific tasks
+import userRoutes from './routes/userRoutes.js';
 import marketplaceRoutes from './routes/marketplaceRoutes.js';
 import cartRoutes from './routes/cartRoutes.js';
 import orderRoutes from './routes/orderRoutes.js';
@@ -26,26 +26,32 @@ import fs from 'fs';
 import path from 'path';
 import authRoutes from './routes/auth.js';
 import universityRoutes from './routes/universityRoutes.js';
+import upload from './middleware/upload.js';
+import './config/passport.js';
+
+import chataiRoutes from './routes/chatai.js';
 
 dotenv.config();
 
 const app = express();
 const httpServer = createServer(app);
 
-// Middleware
-app.use(cors({
-  origin: process.env.CLIENT_URL || 'http://localhost:5173',
-  credentials: true
-}));
+// Middleware setup
+const corsOptions = {
+  origin: ['http://localhost:5173', 'http://127.0.0.1:5173'],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+};
 
+app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Logging
+// Logging setup
 if (process.env.NODE_ENV === 'development') {
   app.use(morgan('dev'));
 } else {
-  // Create a write stream for logging
   const accessLogStream = fs.createWriteStream(
     path.join(process.cwd(), 'access.log'),
     { flags: 'a' }
@@ -56,21 +62,22 @@ if (process.env.NODE_ENV === 'development') {
 // Passport middleware
 app.use(passport.initialize());
 
+// Serve static files
+app.use('/uploads', express.static('uploads'));
+
 // MongoDB connection
 mongoose.connect(process.env.MONGO_URI)
   .then(() => {
     console.log('MongoDB Connected...');
     
-    // Initialize Socket.io after MongoDB connection
+    // Initialize Socket.io
     const io = initializeSocket(httpServer);
-    
-    // Attach io to request object
     app.use((req, res, next) => {
       req.io = io;
       next();
     });
 
-    // Add suspension check before routes
+    // Add suspension check
     app.use(checkSuspension);
 
     // Routes
@@ -85,10 +92,14 @@ mongoose.connect(process.env.MONGO_URI)
     app.use('/api/price-advisor', priceAdvisorRoutes);
     app.use('/api/messages', messageRoutes);
     app.use('/api/transactions', transactionRoutes);
-    app.use('/api/payment', paymentRoutes);  // Register payment routes
+    app.use('/api/payment', paymentRoutes);
     app.use('/api/auth', authRoutes);
     app.use('/api/users', userRoutes);
     app.use('/api/universities', universityRoutes);
+    app.use('/api/chatai', chataiRoutes);
+
+    // Home route
+    app.get('/', (req, res) => res.send('VarsityX API Running'));
 
     // Error handler
     app.use((err, req, res, next) => {
@@ -101,11 +112,12 @@ mongoose.connect(process.env.MONGO_URI)
     });
 
     // Start server
-    httpServer.listen(process.env.PORT || 5000, () => {
-      console.log(`Server is running on port ${process.env.PORT || 5000}`);
+    const PORT = process.env.PORT || 5000;
+    httpServer.listen(PORT, () => {
+      console.log(`Server running on port ${PORT}`);
     });
   })
   .catch(err => {
-    console.error('Error connecting to MongoDB:', err.message);
+    console.error('MongoDB connection error:', err);
     process.exit(1);
   });

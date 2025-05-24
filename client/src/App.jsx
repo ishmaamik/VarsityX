@@ -1,9 +1,9 @@
 import React from "react";
+import axios from "axios";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Login, Register } from "./pages/AuthPages";
 import { ThemeProvider } from "./context/ThemeContext";
-import { AuthProvider, useAuth } from "./context/AuthContext";
 import { AnimatePresence } from "framer-motion";
 import Home from "./pages/Home";
 import Sidebar from "./components/Sidebar";
@@ -13,19 +13,20 @@ import BuyPage from "./pages/marketplace/BuyPage";
 import SellPage from "./pages/marketplace/SellPage";
 import ListingDetail from "./pages/marketplace/ListingDetail";
 import Cart from "./pages/marketplace/Cart";
-import PaymentStatus from "./pages/marketplace/PaymentStatus";
 import SafeMeetups from "./pages/SafeMeetups";
 import Messages from "./pages/Messages";
 import CampusNavigation from "./components/CampusNavigation";
 import ImageUploader from "./components/ImageUploader";
 import PriceAdvisorPage from "./pages/PriceAdvisorPage";
-import AdminPanel from "./pages/AdminPanel";
 import Profile from "./pages/Profile";
+import ReviewSystem from "./components/ReviewSystem";
+import Reviews from "./pages/Reviews";
+import ChatAI from "./pages/chatai";
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
-  const { isAuthenticated } = useAuth();
-  if (!isAuthenticated) {
+  const token = localStorage.getItem("token");
+  if (!token) {
     return <Navigate to="/login" replace />;
   }
   return children;
@@ -46,6 +47,21 @@ const Layout = ({ children }) => {
 };
 
 function AppContent() {
+  const API_BASE = "http://localhost:5000";
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!token) return;
+
+    axios
+      .get(`${API_BASE}/user/user-data`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      .then((res) => setUser(res.data))
+      .catch((err) => console.error("Failed to fetch user data:", err));
+  }, []);
+
   return (
     <AnimatePresence mode="wait">
       <Routes>
@@ -54,23 +70,15 @@ function AppContent() {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
 
-        {/* Payment Status Route - Must be before other routes to handle query parameters */}
-        <Route
-          path="/marketplace/payment-status"
-          element={
-            <PaymentStatus />
-          }
-        />
-
         {/* Protected Routes */}
         <Route
           path="/home"
           element={
-            
+            <ProtectedRoute>
               <Layout>
                 <Home />
               </Layout>
-            
+            </ProtectedRoute>
           }
         />
 
@@ -78,76 +86,66 @@ function AppContent() {
         <Route
           path="/marketplace"
           element={
-            
+            <ProtectedRoute>
               <Layout>
                 <MarketplaceHome />
               </Layout>
-            
+            </ProtectedRoute>
           }
         />
 
         <Route
           path="/marketplace/buy"
           element={
-            
+            <ProtectedRoute>
               <Layout>
                 <BuyPage />
               </Layout>
-            
+            </ProtectedRoute>
           }
         />
 
         <Route
           path="/marketplace/sell"
           element={
-            
+            <ProtectedRoute>
               <Layout>
                 <SellPage />
               </Layout>
-            
+            </ProtectedRoute>
           }
         />
 
         <Route
           path="/marketplace/listing/:id"
           element={
-            
+            <ProtectedRoute>
               <Layout>
                 <ListingDetail />
               </Layout>
-            
+            </ProtectedRoute>
           }
         />
 
         <Route
           path="/marketplace/cart"
           element={
-            
+            <ProtectedRoute>
               <Layout>
                 <Cart />
               </Layout>
-            
+            </ProtectedRoute>
           }
         />
 
         <Route
           path="/marketplace/category/:category"
           element={
-            
+            <ProtectedRoute>
               <Layout>
                 <BuyPage />
               </Layout>
-          }
-        />
-
-        <Route
-          path="/admin"
-          element={
-            <div className="flex h-screen overflow-hidden bg-gray-100 dark:bg-gray-900">
-              <div className={`flex-1 overflow-auto transition-all duration-300`}>
-                <AdminPanel />
-              </div>
-            </div>
+            </ProtectedRoute>
           }
         />
 
@@ -155,97 +153,131 @@ function AppContent() {
         <Route
           path="/my-listings"
           element={
-            
+            <ProtectedRoute>
               <Layout>
                 <MarketplaceHome />
               </Layout>
-            
+            </ProtectedRoute>
           }
         />
 
         <Route
           path="/favorites"
           element={
-            
+            <ProtectedRoute>
               <Layout>
                 <MarketplaceHome />
               </Layout>
-            
+            </ProtectedRoute>
           }
         />
 
         <Route
           path="/messages"
           element={
-            
+            <ProtectedRoute>
               <Layout>
                 <Messages />
               </Layout>
-            
+            </ProtectedRoute>
           }
         />
 
         <Route
           path="/notifications"
           element={
-            
+            <ProtectedRoute>
               <Layout>
                 <div>Notifications Component</div>
               </Layout>
-            
+            </ProtectedRoute>
           }
         />
 
         <Route
           path="/profile"
           element={
+            <ProtectedRoute>
               <Layout>
                 <Profile />
               </Layout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/reviews/:type/:id"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <ReviewSystem />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/reviews"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <Reviews />
+              </Layout>
+            </ProtectedRoute>
           }
         />
 
         <Route
           path="/scam"
           element={
-            
+            <ProtectedRoute>
               <Layout>
                 <ImageUploader />
               </Layout>
-            
+            </ProtectedRoute>
           }
         />
 
         <Route
           path="/settings"
           element={
-            
+            <ProtectedRoute>
               <Layout>
                 <div>Settings Component</div>
               </Layout>
-            
+            </ProtectedRoute>
           }
         />
 
         <Route
           path="/safe-meetups"
           element={
-            
+            <ProtectedRoute>
               <Layout>
                 <SafeMeetups />
               </Layout>
-            
+            </ProtectedRoute>
           }
         />
 
         <Route
           path="/price-advisor"
           element={
-            
+            <ProtectedRoute>
               <Layout>
                 <PriceAdvisorPage />
               </Layout>
-            
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/chatai"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <ChatAI />
+              </Layout>
+            </ProtectedRoute>
           }
         />
 
@@ -258,13 +290,11 @@ function AppContent() {
 
 function App() {
   return (
-    <AuthProvider>
-      <ThemeProvider>
-        <BrowserRouter>
-          <AppContent />
-        </BrowserRouter>
-      </ThemeProvider>
-    </AuthProvider>
+    <ThemeProvider>
+      <BrowserRouter>
+        <AppContent />
+      </BrowserRouter>
+    </ThemeProvider>
   );
 }
 

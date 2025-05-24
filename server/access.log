@@ -912,3 +912,4 @@
 ::1 - - [24/May/2025:22:41:18 +0000] "GET /images/1748125299230-5783800.jpg HTTP/1.1" 200 - "http://localhost:5173/" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36"
 ::1 - - [24/May/2025:22:41:19 +0000] "GET /images/1748125190360-5783800.jpg HTTP/1.1" 200 - "http://localhost:5173/" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36"
 ::1 - - [24/May/2025:22:41:19 +0000] "GET /images/1748112692323-9d073c7e299097af16d5abf9c0da8497.jpg HTTP/1.1" 200 - "http://localhost:5173/" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36"
+::1 - - [24/May/2025:23:43:16 +0000] "POST /user/login HTTP/1.1" 200 725 "http://localhost:5173/" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36"

@@ -25,6 +25,8 @@ import {
   DollarSign,
   ShoppingCart,
   Tag,
+  Star,
+  Image,
 } from "lucide-react";
 
 const Sidebar = ({ open, setOpen }) => {
@@ -45,12 +47,12 @@ const Sidebar = ({ open, setOpen }) => {
       path: "/marketplace/sell",
     },
     { title: "Buy", icon: <DollarSign size={20} />, path: "/marketplace/buy" },
-    {
-      title: "Cart",
-      icon: <ShoppingCart size={20} />,
-      path: "/marketplace/cart",
-    },
     { title: "My Listings", icon: <Book size={20} />, path: "/my-listings" },
+    {
+      title: "Reviews",
+      icon: <Star size={20} />,
+      path: "/reviews",
+    },
     {
       title: "Categories",
       icon: <Book size={20} />,
@@ -96,6 +98,11 @@ const Sidebar = ({ open, setOpen }) => {
       path: "/scam",
     },
     {
+      title: "Chat Assistant",
+      icon: <MessageSquare size={20} />,
+      path: "/chatai",
+    },
+    {
       title: "Safe Meetups",
       icon: <MapPin size={20} />,
       path: "/safe-meetups",
@@ -113,6 +120,11 @@ const Sidebar = ({ open, setOpen }) => {
       path: "/notifications",
     },
     { title: "Profile", icon: <User size={20} />, path: "/profile" },
+    {
+      title: "Text to Image",
+      icon: <Image size={20} />,
+      path: "/text-to-image",
+    },
     {
       title: "Settings",
       icon: <Settings size={20} />,
@@ -142,7 +154,7 @@ const Sidebar = ({ open, setOpen }) => {
               !open && "scale-0"
             }`}
           >
-            Varsityx
+            VarsityX
           </h1>
         </div>
         <button

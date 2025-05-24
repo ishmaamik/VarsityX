@@ -19,13 +19,16 @@ router.post("/", upload.single("image"), async (req, res) => {
     const base64 = file.buffer.toString("base64");
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
-    const prompt = `You're an expert in digital marketplaces. Given the visual condition of this item and assuming it's being sold on a student platform, suggest a fair market price in Bangladeshi Taka (৳). Respond in this format:
-{
-  "estimatedPrice": "৳3500",
-  "condition": "Good",
-  "confidence": 0.87,
-  "comment": "Based on visual analysis, this item appears to be lightly used and is reasonably valued at this price for a student marketplace."
-}`;
+    const prompt = `As a student marketplace pricing expert in Bangladesh, analyze this image and provide a structured analysis with the following specific details only:
+
+HEAD: Brief name/type of the item (1 line)
+PRICE: Recommended price range in ৳ (Taka)
+MARKET: Current market value in ৳ (Taka)
+CONDITION: Item condition rating (Excellent/Good/Fair/Poor)
+DEMAND: Current market demand (High/Medium/Low)
+INSIGHTS: Key factors affecting price (2-3 bullet points)
+
+Format the response exactly with these headings. Keep it brief and to-the-point.`;
 
     const result = await model.generateContent([
       prompt,
