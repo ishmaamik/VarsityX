@@ -13,6 +13,8 @@ import {
 import axios from "axios";
 import { Navigate, useLocation } from "react-router-dom";
 import { io } from "socket.io-client";
+import { toast } from "react-hot-toast";
+import { FiDownload, FiClock } from "react-icons/fi";
 
 const Messages = () => {
   const location = useLocation();
@@ -314,40 +316,67 @@ const Messages = () => {
     }
   };
 
-  const handleImageUpload = async (e) => {
+  const iconPDF = 'https://cdn4.iconfinder.com/data/icons/logos-and-brands/512/27_Pdf_File_Type_Adobe_logo_logos-512.png';
+
+  const downloadMedia = async (e, fileUrl) => {
+    e.preventDefault();
+    try {
+      const response = await axios.get(`http://localhost:5000/upload/file/${fileUrl}`, {
+        responseType: 'blob'
+      });
+      const blob = new Blob([response.data]);
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = fileUrl.split('/').pop(); // Get filename from URL
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Error downloading file:', error);
+      toast.error('Failed to download file');
+    }
+  };
+
+  const handleFileUpload = async (e) => {
     const file = e.target.files[0];
     if (!file || !selectedChat) return;
 
     const formData = new FormData();
-    formData.append('image', file);
+    formData.append('file', file);
 
     try {
       const token = localStorage.getItem('token');
-      // First upload the image
-      const uploadResponse = await axios.post('/upload', formData, {
-        headers: { Authorization: `Bearer ${token}` }
+      // Upload the file
+      const uploadResponse = await axios.post('http://localhost:5000/upload/file/upload', formData, {
+        headers: { 
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'multipart/form-data'
+        }
       });
-      const imageUrl = uploadResponse.data.url;
 
-      // Then send the message with the image URL
+      // Send message with the file URL as text
       const response = await axios.post(
         `/api/messages/conversations/${selectedChat._id}/messages`,
-        { text: '', image: imageUrl },
-        { headers: { Authorization: `Bearer ${token}` } }
+        { 
+          text: uploadResponse.data,
+          type: 'file'
+        },
+        { 
+          headers: { 
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          } 
+        }
       );
 
-      setMessages([...messages, response.data]);
-      
-      // Update the conversation's last message
-      setConversations(prevConversations => 
-        prevConversations.map(conv => 
-          conv._id === selectedChat._id 
-            ? { ...conv, lastMessage: response.data }
-            : conv
-        )
-      );
+      if (response.data.success) {
+        // The message will be added through the socket event
+      }
     } catch (error) {
-      console.error('Error uploading image:', error);
+      console.error('Error uploading file:', error);
+      toast.error('Failed to upload file');
     }
   };
 
@@ -652,22 +681,58 @@ const Messages = () => {
                         : "bg-white dark:bg-gray-800 text-gray-800 dark:text-white"
                     }`}
                   >
-                    {message.image && (
-                      <img 
-                        src={message.image} 
-                        alt="Message attachment" 
-                        className="max-w-full rounded-lg mb-2"
-                      />
+                    {message.type === 'file' ? (
+                      <div className="mb-2">
+                        {message.text.toLowerCase().endsWith('.pdf') ? (
+                          <div className="flex items-center gap-2">
+                            <img 
+                              src={iconPDF}
+                              alt="PDF icon" 
+                              className="w-10 h-10"
+                            />
+                            <span className="text-sm">{message.text.split('/').pop()}</span>
+                          </div>
+                        ) : (
+                          <div className="relative">
+                            <img 
+                              src={`http://localhost:5000/upload/file/${message.text}`}
+                              alt="Message attachment" 
+                              className="max-w-full rounded-lg cursor-pointer"
+                              onClick={() => window.open(`http://localhost:5000/upload/file/${message.text}`, '_blank')}
+                              onError={(e) => {
+                                e.target.onerror = null; // Prevent infinite loop
+                                e.target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgZmlsbC1ydWxlPSJldmVub2RkIiBjbGlwLXJ1bGU9ImV2ZW5vZGQiPjxwYXRoIGQ9Ik0yNCAyNGgtMjR2LTI0aDI0djI0em0tMi0yMmgtMjB2MjBoMjB2LTIwem0tNC4xMTggMTQuMDY0Yy0uMzk5LjM5OS0uOTM3LjYxOS0xLjUwNi42MTlzLTEuMTA3LS4yMi0xLjUwNi0uNjE5bC0yLjg3LTIuODdsLTIuODcgMi44N2MtLjM5OS4zOTktLjkzNy42MTktMS41MDYuNjE5cy0xLjEwNy0uMjItMS41MDYtLjYxOWMtLjgzMi0uODMyLS44MzItMi4xOCAwLTMuMDExbDIuODctMi44Ny0yLjg3LTIuODdjLS44MzItLjgzMi0uODMyLTIuMTggMC0zLjAxMSAxLjY2NC0xLjY2NCA0LjM1OC0xLjY2NCA2LjAyMiAwbDIuODcgMi44NyAyLjg3LTIuODdjMS42NjQtMS42NjQgNC4zNTgtMS42NjQgNi4wMjIgMCAuODMyLjgzMi44MzIgMi4xOCAwIDMuMDExbC0yLjg3IDIuODcgMi44NyAyLjg3Yy44MzIuODMyLjgzMiAyLjE4IDAgMy4wMTF6Ii8+PC9zdmc+';
+                              }}
+                            />
+                          </div>
+                        )}
+                        <div className="flex items-center gap-2 mt-1">
+                          <button 
+                            onClick={(e) => downloadMedia(e, message.text)}
+                            className="hover:underline flex items-center gap-1 text-xs"
+                          >
+                            <FiDownload size={12} />
+                            Download
+                          </button>
+                          <div className="flex items-center ml-auto text-xs text-gray-200">
+                            <FiClock className="mr-1" size={12} />
+                            {formatTime(message.createdAt)}
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        <p>{message.text}</p>
+                        <div className="flex items-center justify-end gap-1 mt-1">
+                          <span className="text-xs text-gray-200">
+                            {formatTime(message.createdAt)}
+                          </span>
+                          {message.sender._id === currentUser?._id && (
+                            <CheckCheck size={16} className="text-gray-200" />
+                          )}
+                        </div>
+                      </>
                     )}
-                    {message.text && <p>{message.text}</p>}
-                    <div className="flex items-center justify-end gap-1 mt-1">
-                      <span className="text-xs text-gray-200">
-                        {formatTime(message.createdAt)}
-                      </span>
-                      {message.sender._id === currentUser?._id && (
-                        <CheckCheck size={16} className="text-gray-200" />
-                      )}
-                    </div>
                   </div>
                 </div>
               ))}
@@ -684,9 +749,9 @@ const Messages = () => {
                   <ImageIcon size={20} />
                   <input
                     type="file"
-                    accept="image/*"
+                    accept="image/*,application/pdf"
                     className="hidden"
-                    onChange={handleImageUpload}
+                    onChange={handleFileUpload}
                   />
                 </label>
                 <input

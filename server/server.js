@@ -35,6 +35,9 @@ app.use(cors(corsOptions));
 app.use(express.json());
 app.use(passport.initialize());  
 
+// Serve static files from uploads directory
+app.use('/upload/file', express.static('uploads'));
+
 // Attach io to request object
 app.use((req, res, next) => {
   req.io = io;

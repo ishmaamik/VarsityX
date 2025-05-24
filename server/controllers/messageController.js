@@ -151,13 +151,13 @@ export const getMessages = async (req, res) => {
 export const sendMessage = async (req, res) => {
   try {
     const { conversationId } = req.params;
-    const { text, image } = req.body;
+    const { text, type } = req.body;
 
     // Check if user is participant
     const conversation = await Conversation.findOne({
       _id: conversationId,
       participants: req.user.userId
-    });
+    }).populate('participants');
 
     if (!conversation) {
       return res.status(404).json({
@@ -170,7 +170,7 @@ export const sendMessage = async (req, res) => {
       conversation: conversationId,
       sender: req.user.userId,
       text,
-      image
+      type: type || 'text'
     });
 
     await message.save();
@@ -179,6 +179,20 @@ export const sendMessage = async (req, res) => {
     // Update conversation's last message
     conversation.lastMessage = message;
     await conversation.save();
+
+    // Emit socket event to all participants
+    const io = req.io;
+    conversation.participants.forEach(participant => {
+      io.to(participant._id.toString()).emit('new_message', {
+        message,
+        conversationId
+      });
+    });
+
+    // Also emit conversation update
+    conversation.participants.forEach(participant => {
+      io.to(participant._id.toString()).emit('conversation_update', conversation);
+    });
 
     res.status(201).json({
       success: true,

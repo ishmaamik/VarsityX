@@ -1,36 +1,26 @@
-import grid from 'gridfs-stream';
-import mongoose from 'mongoose';
+import path from 'path';
+import fs from 'fs';
 
 const url = 'http://localhost:5000';
-
-
-let gfs, gridfsBucket;
-const conn = mongoose.connection;
-conn.once('open', () => {
-    gridfsBucket = new mongoose.mongo.GridFSBucket(conn.db, {
-        bucketName: 'fs'
-    });
-    gfs = grid(conn.db, mongoose.mongo);
-    gfs.collection('fs');
-});
-
 
 export const uploadFile = (request, response) => {
     if(!request.file) 
         return response.status(404).json("File not found");
     
     const imageUrl = `${request.file.filename}`;
-
     response.status(200).json(imageUrl);    
 }
 
 export const getFile = async (request, response) => {
     try {   
-        const file = await gfs.files.findOne({ filename: request.params.filename });
-        // const readStream = gfs.createReadStream(file.filename);
-        // readStream.pipe(response);
-        const readStream = gridfsBucket.openDownloadStream(file._id);
-        readStream.pipe(response);
+        const filename = request.params.filename;
+        const filePath = path.join(process.cwd(), 'uploads', filename);
+        
+        if (!fs.existsSync(filePath)) {
+            return response.status(404).json({ msg: 'File not found' });
+        }
+
+        response.sendFile(filePath);
     } catch (error) {
         response.status(500).json({ msg: error.message });
     }
