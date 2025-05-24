@@ -6,6 +6,7 @@ import {
   ChevronDown, DollarSign, Gavel, Clock, ShoppingCart, Moon, Sun, Loader
 } from 'lucide-react';
 import axios from 'axios';
+import { toast } from 'react-hot-toast';
 
 const ListingDetail = () => {
   const { id } = useParams();
@@ -18,6 +19,25 @@ const ListingDetail = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [cartItems, setCartItems] = useState([]);
+  const [currentUser, setCurrentUser] = useState(null);
+
+  // Fetch current user data
+  useEffect(() => {
+    const fetchCurrentUser = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        if (token) {
+          const response = await axios.get('http://localhost:5000/user/user-data', {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          setCurrentUser(response.data);
+        }
+      } catch (err) {
+        console.error('Error fetching user:', err);
+      }
+    };
+    fetchCurrentUser();
+  }, []);
 
   // Fetch listing details
   useEffect(() => {
@@ -126,6 +146,31 @@ const ListingDetail = () => {
       }
     } catch (err) {
       console.error('Error adding to cart:', err);
+    }
+  };
+
+  const handleMessageSeller = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        navigate('/login');
+        return;
+      }
+
+      const response = await axios.post(
+        `http://localhost:5000/api/messages/conversations/listing/${listing._id}`,
+        { message: `Hi, I'm interested in your listing: ${listing.title}` },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      if (response.data.success) {
+        navigate('/messages', { 
+          state: { selectedChat: response.data.data }
+        });
+      }
+    } catch (error) {
+      console.error('Error starting conversation:', error);
+      toast.error('Failed to start conversation with seller');
     }
   };
 
@@ -313,10 +358,17 @@ const ListingDetail = () => {
                     Add to Cart
                   </button>
                 )}
-                <button className="w-full py-3 border border-blue-600 text-blue-600 rounded-lg font-medium hover:bg-blue-50 dark:border-blue-400 dark:text-blue-400 dark:hover:bg-blue-900/30 flex items-center justify-center">
-                  <MessageSquare className="mr-2" size={18} />
-                  Message Seller
-                </button>
+                
+                {/* Only show message button if the current user is not the seller */}
+                {currentUser && currentUser._id !== listing.seller._id && (
+                  <button 
+                    onClick={handleMessageSeller}
+                    className="w-full py-3 border border-blue-600 text-blue-600 rounded-lg font-medium hover:bg-blue-50 dark:border-blue-400 dark:text-blue-400 dark:hover:bg-blue-900/30 flex items-center justify-center"
+                  >
+                    <MessageSquare className="mr-2" size={18} />
+                    Message Seller
+                  </button>
+                )}
               </div>
             </div>
 

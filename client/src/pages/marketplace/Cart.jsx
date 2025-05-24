@@ -179,7 +179,11 @@ const Cart = () => {
               {cartItems.map(item => {
                 const listing = item.listing || item;
                 return (
-                  <div key={item._id} className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 mb-4">
+                  <div 
+                    key={item._id} 
+                    className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 mb-4 cursor-pointer hover:shadow-lg transition-shadow"
+                    onClick={() => navigate(`/marketplace/listing/${listing._id}`)}
+                  >
                     <div className="flex flex-col sm:flex-row">
                       {/* Item Image */}
                       <div className="w-full sm:w-32 h-32 bg-gray-200 dark:bg-gray-700 rounded-lg overflow-hidden mb-4 sm:mb-0">
@@ -201,7 +205,10 @@ const Cart = () => {
                         <div className="flex justify-between">
                           <h3 className="text-lg font-bold dark:text-white">{listing.title}</h3>
                           <button 
-                            onClick={() => removeItem(item._id)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              removeItem(item._id);
+                            }}
                             className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
                           >
                             <Trash2 size={20} />
@@ -216,14 +223,20 @@ const Cart = () => {
                           <span className="mr-4 dark:text-gray-300">Quantity:</span>
                           <div className="flex items-center border rounded-lg dark:border-gray-600">
                             <button
-                              onClick={() => updateQuantity(item._id, item.quantity - 1)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                updateQuantity(item._id, item.quantity - 1);
+                              }}
                               className="px-3 py-1 hover:bg-gray-100 dark:hover:bg-gray-700"
                             >
                               -
                             </button>
                             <span className="px-4 py-1 border-x dark:border-gray-600 dark:text-gray-300">{item.quantity}</span>
                             <button
-                              onClick={() => updateQuantity(item._id, item.quantity + 1)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                updateQuantity(item._id, item.quantity + 1);
+                              }}
                               className="px-3 py-1 hover:bg-gray-100 dark:hover:bg-gray-700"
                             >
                               +

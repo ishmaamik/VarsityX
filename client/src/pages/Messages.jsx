@@ -11,12 +11,13 @@ import {
   X,
 } from "lucide-react";
 import axios from "axios";
-import { Navigate } from "react-router-dom";
+import { Navigate, useLocation } from "react-router-dom";
 import { io } from "socket.io-client";
 
 const Messages = () => {
+  const location = useLocation();
   const [conversations, setConversations] = useState([]);
-  const [selectedChat, setSelectedChat] = useState(null);
+  const [selectedChat, setSelectedChat] = useState(location.state?.selectedChat || null);
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
@@ -255,7 +256,7 @@ const Messages = () => {
       const response = await axios.get('/api/messages/conversations', {
         headers: { Authorization: `Bearer ${token}` }
       });
-      setConversations(response.data);
+      setConversations(response.data.data);
       setLoading(false);
     } catch (error) {
       console.error('Error fetching conversations:', error);
@@ -270,7 +271,7 @@ const Messages = () => {
       const response = await axios.get(`/api/messages/conversations/${conversationId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      setMessages(response.data);
+      setMessages(response.data.data);
     } catch (error) {
       console.error('Error fetching messages:', error);
     }

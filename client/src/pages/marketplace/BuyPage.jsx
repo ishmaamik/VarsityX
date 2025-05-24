@@ -259,7 +259,8 @@ const BuyPage = () => {
           {listings.map(item => (
             <div 
               key={item._id} 
-              className="bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-shadow"
+              className="bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-shadow cursor-pointer"
+              onClick={() => navigate(`/marketplace/listing/${item._id}`)}
             >
               <div className="h-48 bg-gray-200 dark:bg-gray-700 overflow-hidden">
                 {item.images?.[0] ? (
@@ -284,7 +285,10 @@ const BuyPage = () => {
                   {item.condition || 'Service'}
                 </p>
                 <button
-                  onClick={() => addToCart(item)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    addToCart(item);
+                  }}
                   className="w-full py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800"
                 >
                   Add to Cart
