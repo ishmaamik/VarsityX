@@ -14,6 +14,14 @@ export const register = async (req, res) => {
         message: "Email and password are required" 
       });
     }
+    const allowedDomain = /\.edu$/;
+
+    if (!allowedDomain.test(email)) {
+      return res.status(400).json({
+        success: false,
+        message: "Registration allowed only with a valid university (.edu) email address."
+      });
+    }
 
     const existingUser = await User.findOne({ email });
     if (existingUser) {
@@ -56,7 +64,7 @@ export const register = async (req, res) => {
     res.status(500).json({ 
       success: false,
       message: "Registration failed",
-      error: process.env.NODE_ENV === "development" ? err.message : undefined
+      error: err.message
     });
   }
 };
