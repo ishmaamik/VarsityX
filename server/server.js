@@ -6,6 +6,12 @@ import passport from 'passport';
 import mongoose from 'mongoose';
 import userRoutes from './routes/userRoutes.js';  // Handles User and Admin authentication
 import adminRoutes from './routes/adminRoutes.js';  // Separate Admin routes for admin-specific tasks
+import marketplaceRoutes from './routes/marketplaceRoutes.js';
+import cartRoutes from './routes/cartRoutes.js';
+import orderRoutes from './routes/orderRoutes.js';
+import reviewRoutes from './routes/reviewRoutes.js';
+import upload from "./config/upload.js"
+import uploadRouter from './routes/uploadRoutes.js';
 import './config/passport.js';  // Passport configuration for Google OAuth
 
 dotenv.config();
@@ -26,8 +32,11 @@ app.use(passport.initialize());
 app.use('/user', userRoutes); 
 
 app.use('/admin', adminRoutes); 
-
-
+app.use('/marketplace', marketplaceRoutes);
+app.use('/cart', cartRoutes);
+app.use('/orders', orderRoutes);
+app.use('/reviews', reviewRoutes);
+app.use('/upload', uploadRouter);
 // MongoDB connection
 mongoose.connect(process.env.MONGO_URI).then(() => console.log('MongoDB connected'))
   .catch(err => console.log(err));
