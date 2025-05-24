@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from "react";
-import Map, { Marker, Popup, NavigationControl } from "react-map-gl";
-import MapboxDirections from "./MapboxDirections";
+import ReactMapGL, { Marker, Popup, NavigationControl } from "react-map-gl";
+import MapboxDirections from "../Map/MapboxDirections";
 import "mapbox-gl/dist/mapbox-gl.css";
 
-const MapboxMap = ({
+const CampusNavigation = ({
   buildings,
   selectedBuilding,
   userLocation,
@@ -16,7 +16,6 @@ const MapboxMap = ({
   const [mapError, setMapError] = useState(null);
 
   useEffect(() => {
-    // Verify Mapbox token on component mount
     if (!import.meta.env.VITE_MAPBOX_TOKEN) {
       setMapError("Mapbox token is missing");
       console.error("Mapbox token is not configured");
@@ -32,7 +31,7 @@ const MapboxMap = ({
   }
 
   return (
-    <Map
+    <ReactMapGL
       {...viewState}
       onMove={(evt) => onViewStateChange(evt.viewState)}
       style={{ width: "100%", height: "100%" }}
@@ -45,12 +44,10 @@ const MapboxMap = ({
     >
       <NavigationControl position="top-right" />
 
-      {/* Add Directions Component */}
       {routeStart && routeEnd && (
         <MapboxDirections start={routeStart} end={routeEnd} />
       )}
 
-      {/* Enhanced User Location Marker */}
       {userLocation && (
         <Marker
           longitude={userLocation[1]}
@@ -67,7 +64,6 @@ const MapboxMap = ({
         </Marker>
       )}
 
-      {/* Building Markers */}
       {buildings?.map((building) => (
         <Marker
           key={building.id}
@@ -92,7 +88,6 @@ const MapboxMap = ({
         </Marker>
       ))}
 
-      {/* Selected Building Popup */}
       {selectedBuilding && (
         <Popup
           longitude={selectedBuilding.coordinates[1]}
@@ -112,8 +107,8 @@ const MapboxMap = ({
           </div>
         </Popup>
       )}
-    </Map>
+    </ReactMapGL>
   );
 };
 
-export default MapboxMap;
+export default CampusNavigation;

@@ -1,16 +1,18 @@
 import React, { useState, useEffect } from "react";
-import MapboxMap from "../components/CampusNavigation";
-import { MapPin, Shield, Users } from "lucide-react";
+import CampusNavigation from "../components/CampusNavigation";
+import { Shield, MapPin, Users } from "lucide-react";
 
 const SafeMeetups = () => {
   const [viewState, setViewState] = useState({
-    longitude: 90.4043, // Default to IUT-Dhaka coordinates
+    longitude: 90.4043,
     latitude: 23.8223,
     zoom: 15,
   });
 
   const [userLocation, setUserLocation] = useState(null);
   const [selectedBuilding, setSelectedBuilding] = useState(null);
+  const [routeStart, setRouteStart] = useState(null);
+  const [routeEnd, setRouteEnd] = useState(null);
   const [safeMeetupLocations] = useState([
     {
       id: 1,
@@ -30,6 +32,15 @@ const SafeMeetups = () => {
       hours: "7:00 AM - 10:00 PM",
       securityFeatures: ["Security Desk", "High Traffic Area", "CCTV"],
     },
+    {
+      id: 3,
+      name: "Campus Security Office",
+      type: "security",
+      coordinates: [23.822, 90.404],
+      description: "24/7 security office with emergency services",
+      hours: "Open 24/7",
+      securityFeatures: ["Security Staff", "Emergency Services", "CCTV"],
+    },
   ]);
 
   useEffect(() => {
@@ -37,10 +48,12 @@ const SafeMeetups = () => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
-          setUserLocation([
+          const location = [
             position.coords.latitude,
             position.coords.longitude,
-          ]);
+          ];
+          setUserLocation(location);
+          setRouteStart(location); // Set initial route start to user location
         },
         (error) => {
           console.error("Error getting location:", error);
@@ -48,6 +61,17 @@ const SafeMeetups = () => {
       );
     }
   }, []);
+
+  const handleLocationSelect = (location) => {
+    setSelectedBuilding(location);
+    setRouteEnd(location.coordinates);
+    setViewState({
+      ...viewState,
+      latitude: location.coordinates[0],
+      longitude: location.coordinates[1],
+      zoom: 17,
+    });
+  };
 
   return (
     <div className="flex flex-col h-screen">
@@ -72,22 +96,21 @@ const SafeMeetups = () => {
           {safeMeetupLocations.map((location) => (
             <div
               key={location.id}
-              className="mb-4 p-4 border rounded-lg hover:border-blue-500 cursor-pointer transition-colors"
-              onClick={() => {
-                setSelectedBuilding(location);
-                setViewState({
-                  ...viewState,
-                  latitude: location.coordinates[0],
-                  longitude: location.coordinates[1],
-                  zoom: 17,
-                });
-              }}
+              className={`mb-4 p-4 border rounded-lg hover:border-blue-500 cursor-pointer transition-colors ${
+                selectedBuilding?.id === location.id
+                  ? "border-blue-500 bg-blue-50"
+                  : ""
+              }`}
+              onClick={() => handleLocationSelect(location)}
             >
               <h3 className="font-semibold text-gray-800 dark:text-white">
                 {location.name}
               </h3>
               <p className="text-sm text-gray-600 dark:text-gray-300">
                 {location.description}
+              </p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                {location.hours}
               </p>
               <div className="mt-2 flex flex-wrap gap-2">
                 {location.securityFeatures.map((feature, index) => (
@@ -104,18 +127,19 @@ const SafeMeetups = () => {
         </div>
 
         <div className="flex-1 bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
-          <MapboxMap
+          <CampusNavigation
             buildings={safeMeetupLocations}
             selectedBuilding={selectedBuilding}
             userLocation={userLocation}
-            onBuildingSelect={setSelectedBuilding}
+            onBuildingSelect={handleLocationSelect}
             viewState={viewState}
             onViewStateChange={setViewState}
+            routeStart={routeStart}
+            routeEnd={routeEnd}
           />
         </div>
       </div>
 
-      {/* Safety Tips Footer */}
       <div className="bg-blue-50 dark:bg-gray-900 p-4">
         <div className="flex items-center gap-2 text-blue-800 dark:text-blue-300">
           <Users className="w-5 h-5" />
