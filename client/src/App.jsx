@@ -48,7 +48,6 @@ function AppContent() {
         <Route path="/marketplace/sell" element={<SellPage />} />
         <Route path="/marketplace/listing/:id" element={<ListingDetail />} />
         <Route path="/marketplace/cart" element={<Cart />} />
-        
         <Route path="/home" element={
           <div className="flex h-screen overflow-hidden">
             <Sidebar open={sidebarOpen} setOpen={setSidebarOpen} />

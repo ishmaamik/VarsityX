@@ -3,9 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../../context/ThemeContext';
 import { 
   Search, Bell, User, Book, Laptop, Bike, MessageSquare,
-  GraduationCap, ArrowRight, ShoppingCart, Moon, Sun, Loader
+  GraduationCap, ArrowRight, ShoppingCart, Moon, Sun
 } from 'lucide-react';
-import axios from 'axios';
 
 const MarketplaceHome = () => {
   const navigate = useNavigate();
@@ -13,45 +12,13 @@ const MarketplaceHome = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [cartItems, setCartItems] = useState([]);
-  const [featuredListings, setFeaturedListings] = useState([]);
-  const [loading, setLoading] = useState(true);
 
-  // Fetch featured listings
+  // Load cart items from localStorage
   useEffect(() => {
-    const fetchFeaturedListings = async () => {
-      try {
-        const response = await axios.get('http://localhost:5000/marketplace', {
-          params: { limit: 3, sortBy: 'newest' }
-        });
-        setFeaturedListings(response.data.listings);
-      } catch (err) {
-        console.error('Error fetching featured listings:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchFeaturedListings();
-  }, []);
-
-  // Load cart items
-  useEffect(() => {
-    const fetchCart = async () => {
-      try {
-        const token = localStorage.getItem('token');
-        if (token) {
-          const response = await axios.get('http://localhost:5000/cart', {
-            headers: { Authorization: `Bearer ${token}` }
-          });
-          setCartItems(response.data.cart);
-        } else {
-          const savedCart = localStorage.getItem('cartItems');
-          if (savedCart) setCartItems(JSON.parse(savedCart));
-        }
-      } catch (err) {
-        console.error('Error fetching cart:', err);
-      }
-    };
-    fetchCart();
+    const savedCart = localStorage.getItem('cartItems');
+    if (savedCart) {
+      setCartItems(JSON.parse(savedCart));
+    }
   }, []);
 
   const categories = [
@@ -62,55 +29,38 @@ const MarketplaceHome = () => {
     { name: 'Skill Exchange', icon: <MessageSquare size={20} />, id: 'skill-exchange' },
   ];
 
-  const addToCart = async (product) => {
-    try {
-      const token = localStorage.getItem('token');
-      if (token) {
-        await axios.post('http://localhost:5000/cart', 
-          { listingId: product._id, quantity: 1 },
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-        // Update local state
-        setCartItems(prev => {
-          const existing = prev.find(item => item.listing._id === product._id);
-          if (existing) {
-            return prev.map(item => 
-              item.listing._id === product._id 
-                ? { ...item, quantity: item.quantity + 1 } 
-                : item
-            );
-          }
-          return [...prev, { listing: product, quantity: 1 }];
-        });
-      } else {
-        // For guest users
-        const updated = [...cartItems];
-        const existing = updated.find(item => item._id === product._id);
-        if (existing) {
-          existing.quantity += 1;
-        } else {
-          updated.push({ ...product, quantity: 1 });
-        }
-        setCartItems(updated);
-        localStorage.setItem('cartItems', JSON.stringify(updated));
-      }
-    } catch (err) {
-      console.error('Error adding to cart:', err);
+  const featuredListings = [
+    { 
+      id: 1, 
+      title: 'Calculus Textbook', 
+      price: 25, 
+      category: 'textbooks',
+      university: 'IUT',
+      image: 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60'
+    },
+    // ... other listings
+  ];
+
+  const addToCart = (product) => {
+    const existingItem = cartItems.find(item => item.id === product.id);
+    
+    let updatedCart;
+    if (existingItem) {
+      updatedCart = cartItems.map(item =>
+        item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item
+      );
+    } else {
+      updatedCart = [...cartItems, { ...product, quantity: 1 }];
     }
+    
+    setCartItems(updatedCart);
+    localStorage.setItem('cartItems', JSON.stringify(updatedCart));
   };
 
   const filteredListings = featuredListings.filter(listing => 
     (selectedCategory === 'all' || listing.category === selectedCategory) &&
     listing.title.toLowerCase().includes(searchTerm.toLowerCase())
   );
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
-        <Loader className="animate-spin" size={32} />
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -209,28 +159,20 @@ const MarketplaceHome = () => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {filteredListings.map((listing) => (
               <div 
-                key={listing._id} 
+                key={listing.id} 
                 className="bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-shadow"
               >
                 <div className="h-48 overflow-hidden">
-                  {listing.images?.[0] ? (
-                    <img 
-                      src={listing.images[0]} 
-                      alt={listing.title}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-gray-200 dark:bg-gray-700">
-                      <Image size={48} className="text-gray-400" />
-                    </div>
-                  )}
+                  <img 
+                    src={listing.image} 
+                    alt={listing.title}
+                    className="w-full h-full object-cover"
+                  />
                 </div>
                 <div className="p-4">
                   <h3 className="text-lg font-bold mb-1 dark:text-white">{listing.title}</h3>
                   <div className="flex justify-between items-center">
-                    <span className="text-blue-600 dark:text-blue-400 font-bold">
-                      ৳{listing.price || listing.hourlyRate || listing.currentBid}
-                    </span>
+                    <span className="text-blue-600 dark:text-blue-400 font-bold">৳{listing.price}</span>
                     <span className="text-sm text-gray-500 dark:text-gray-400">{listing.university}</span>
                   </div>
                   <button 
@@ -256,20 +198,7 @@ const MarketplaceHome = () => {
               <h3 className="text-lg font-semibold mb-2 dark:text-white">Create Account</h3>
               <p className="text-gray-600 dark:text-gray-300">Verify with your university email to join the community</p>
             </div>
-            <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
-              <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center text-blue-600 dark:text-blue-400 mb-4">
-                2
-              </div>
-              <h3 className="text-lg font-semibold mb-2 dark:text-white">Browse or List Items</h3>
-              <p className="text-gray-600 dark:text-gray-300">Find what you need or sell what you don't</p>
-            </div>
-            <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
-              <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center text-blue-600 dark:text-blue-400 mb-4">
-                3
-              </div>
-              <h3 className="text-lg font-semibold mb-2 dark:text-white">Connect & Transact</h3>
-              <p className="text-gray-600 dark:text-gray-300">Message sellers and arrange secure transactions</p>
-            </div>
+            {/* ... other steps */}
           </div>
         </div>
       </main>
