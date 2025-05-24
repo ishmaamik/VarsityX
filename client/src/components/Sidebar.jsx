@@ -18,6 +18,7 @@ import {
   LogOut,
   GraduationCap,
   History,
+  MapPin,
 } from "lucide-react";
 
 const Sidebar = ({ open, setOpen }) => {
@@ -42,6 +43,11 @@ const Sidebar = ({ open, setOpen }) => {
     { title: "My Listings", icon: <History size={20} />, path: "/my-listings" },
     { title: "Saved Items", icon: <Heart size={20} />, path: "/favorites" },
     { title: "Messages", icon: <MessageSquare size={20} />, path: "/messages" },
+    {
+      title: "Safe Meetups",
+      icon: <MapPin size={20} />,
+      path: "/safe-meetups",
+    },
     {
       title: "Notifications",
       icon: <Bell size={20} />,
