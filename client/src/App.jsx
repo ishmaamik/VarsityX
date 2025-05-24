@@ -7,6 +7,7 @@ import { AnimatePresence } from "framer-motion";
 import Home from "./pages/Home";
 import Sidebar from "./components/Sidebar";
 import SafeMeetups from "./pages/SafeMeetups";
+import ImageUploader from './components/ImageUploader';
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
@@ -57,6 +58,17 @@ function AppContent() {
             <ProtectedRoute>
               <Layout>
                 <SafeMeetups />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/image-uploader"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <ImageUploader />
               </Layout>
             </ProtectedRoute>
           }
