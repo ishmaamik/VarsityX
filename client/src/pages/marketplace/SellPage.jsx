@@ -3,8 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../../context/ThemeContext';
 import { 
   Book, Laptop, Bike, GraduationCap, MessageSquare, 
-  Image, X, ChevronDown, DollarSign, Clock, Gavel, Eye, EyeOff, Moon, Sun
+  Image, X, ChevronDown, DollarSign, Clock, Gavel, Eye, EyeOff, Moon, Sun, Loader
 } from 'lucide-react';
+import axios from 'axios';
 
 const SellPage = () => {
   const navigate = useNavigate();
@@ -23,6 +24,9 @@ const SellPage = () => {
   });
 
   const [images, setImages] = useState([]);
+  const [imageFiles, setImageFiles] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   const categories = [
     { value: 'textbooks', label: 'Textbooks', icon: <Book size={18} /> },
@@ -57,9 +61,10 @@ const SellPage = () => {
 
   const removeImage = (index) => {
     setImages(prev => prev.filter((_, i) => i !== index));
+    setImageFiles(prev => prev.filter((_, i) => i !== index));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
@@ -130,6 +135,12 @@ const SellPage = () => {
           </button>
         </div>
         
+        {error && (
+          <div className="mb-4 p-3 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded-lg">
+            {error}
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
           {/* Category Selection */}
           <div className="mb-6">
@@ -176,6 +187,7 @@ const SellPage = () => {
               rows={4}
               className="w-full p-3 border rounded-lg bg-white dark:bg-gray-700 dark:text-white"
               placeholder="Provide details about your item or service..."
+              required
             />
           </div>
 
@@ -402,7 +414,14 @@ const SellPage = () => {
             disabled={loading}
             className="w-full py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800 disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center"
           >
-            Publish Listing
+            {loading ? (
+              <>
+                <Loader className="animate-spin mr-2" size={18} />
+                Publishing...
+              </>
+            ) : (
+              'Publish Listing'
+            )}
           </button>
           </form>
       </div>
