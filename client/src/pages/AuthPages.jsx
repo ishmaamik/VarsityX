@@ -20,10 +20,12 @@ export const Register = () => {
     if (formData.password !== formData.confirmPassword)
       return alert("Passwords do not match");
     try {
-      await axios.post(`${API_BASE}/user/register`, formData);
+      await axios.post(`${API_BASE}/user/register`, 
+      {email: formData.email,
+        password: formData.password,});
       alert("Registered successfully! Please log in.");
     } catch (err) {
-      alert(err.response?.data?.message || "Registration failed");
+      alert(err.response?.data?.message );
     }
   };
 
