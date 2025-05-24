@@ -9,12 +9,14 @@ import {
   CheckCheck,
   Plus,
   X,
+  Clock,
+  Download
 } from "lucide-react";
 import axios from "axios";
 import { Navigate, useLocation } from "react-router-dom";
 import { io } from "socket.io-client";
 import { toast } from "react-hot-toast";
-import { FiDownload, FiClock } from "react-icons/fi";
+import { FiDownload, FiClock } from "react-icons/fi"; // ✅ Correct
 
 const SERVER_URL = 'http://localhost:5000';
 
@@ -741,7 +743,7 @@ const Messages = () => {
                             onClick={(e) => downloadMedia(e, message.file?.url || `${SERVER_URL}/upload/file/${message.text}`)}
                             className="hover:underline flex items-center gap-1 text-xs"
                           >
-                            <FiDownload size={12} />
+                            <Download size={12} />
                             Download
                           </button>
                           <div className="flex items-center ml-auto text-xs text-gray-200">

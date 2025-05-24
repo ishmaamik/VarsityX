@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { 
   ShoppingBag, 
   Shield, 
@@ -22,7 +23,8 @@ import {
   Search,
   Camera,
   TrendingUp,
-  Globe
+  Globe,
+  Home
 } from 'lucide-react';
 
 const Landing = () => {
@@ -162,6 +164,10 @@ const Landing = () => {
             </div>
             
             <div className="hidden md:flex items-center space-x-8">
+              <a href="/" className="flex items-center space-x-2 text-purple-400 hover:text-purple-300 transition-colors">
+                <Home className="w-4 h-4" />
+                <span>Home</span>
+              </a>
               <a href="#features" className="hover:text-purple-400 transition-colors">Features</a>
               <a href="#ai" className="hover:text-purple-400 transition-colors">AI Tools</a>
               <a href="#testimonials" className="hover:text-purple-400 transition-colors">Reviews</a>
@@ -183,6 +189,10 @@ const Landing = () => {
         {isMenuOpen && (
           <div className="md:hidden bg-black/90 backdrop-blur-md border-t border-white/10">
             <div className="container mx-auto px-6 py-4 space-y-4">
+              <a href="/" className="flex items-center space-x-2 text-purple-400 hover:text-purple-300 transition-colors">
+                <Home className="w-4 h-4" />
+                <span>Home</span>
+              </a>
               <a href="#features" className="block hover:text-purple-400 transition-colors">Features</a>
               <a href="#ai" className="block hover:text-purple-400 transition-colors">AI Tools</a>
               <a href="#testimonials" className="block hover:text-purple-400 transition-colors">Reviews</a>
@@ -218,6 +228,10 @@ const Landing = () => {
 
           <FloatingCard delay={2} className="mb-12">
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+              <Link to="/home" className="group bg-white text-purple-600 px-8 py-4 rounded-full text-lg font-semibold hover:bg-purple-50 transition-all duration-300 transform hover:scale-105 flex items-center">
+                <Home className="w-5 h-5 mr-2" />
+                Go to Home
+              </Link>
               <button className="group bg-gradient-to-r from-purple-500 to-cyan-500 px-8 py-4 rounded-full text-lg font-semibold hover:shadow-2xl hover:shadow-purple-500/25 transition-all duration-300 transform hover:scale-105">
                 Start Trading Now
                 <ArrowRight className="inline-block ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
