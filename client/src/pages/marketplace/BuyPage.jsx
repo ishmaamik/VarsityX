@@ -34,6 +34,7 @@ const BuyPage = () => {
   const [listings, setListings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [paymentLoading, setPaymentLoading] = useState({});
 
   // Fetch listings from backend
   useEffect(() => {
@@ -87,41 +88,42 @@ const BuyPage = () => {
     fetchCart();
   }, []);
 
-  // Add to cart logic
-  const addToCart = async (product) => {
+  // Handle direct payment
+  const handlePayment = async (item) => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      alert('Please login to proceed with payment');
+      navigate('/login');
+      return;
+    }
+
+    setPaymentLoading(prev => ({ ...prev, [item._id]: true }));
     try {
-      const token = localStorage.getItem('token');
-      if (token) {
-        await axios.post('http://localhost:5000/cart', 
-          { listingId: product._id, quantity: 1 },
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-        // Update local state
-        setCartItems(prev => {
-          const existing = prev.find(item => item.listing._id === product._id);
-          if (existing) {
-            return prev.map(item => 
-              item.listing._id === product._id 
-                ? { ...item, quantity: item.quantity + 1 } 
-                : item
-            );
-          }
-          return [...prev, { listing: product, quantity: 1 }];
-        });
-      } else {
-        // For guest users
-        const updated = [...cartItems];
-        const existing = updated.find(item => item._id === product._id);
-        if (existing) {
-          existing.quantity += 1;
-        } else {
-          updated.push({ ...product, quantity: 1 });
+      const res = await axios.post(
+        'http://localhost:5000/api/payment/ssl',
+        {
+          amount: item.price.toFixed(2),
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
         }
-        setCartItems(updated);
-        localStorage.setItem('cartItems', JSON.stringify(updated));
+      );
+
+      if (res.data?.GatewayPageURL) {
+        window.location.href = res.data.GatewayPageURL;
+      } else {
+        throw new Error('No gateway URL received');
       }
     } catch (err) {
-      console.error('Error adding to cart:', err);
+      console.error('Payment initialization failed:', err);
+      alert(
+        err.response?.data?.error ||
+        'Payment failed. Please try again.'
+      );
+    } finally {
+      setPaymentLoading(prev => ({ ...prev, [item._id]: false }));
     }
   };
 
@@ -270,7 +272,7 @@ const BuyPage = () => {
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-gray-400">
-                    <Image size={48} />
+                    <ShoppingCart size={48} />
                   </div>
                 )}
               </div>
@@ -284,10 +286,22 @@ const BuyPage = () => {
                   {item.condition || 'Service'}
                 </p>
                 <button
-                  onClick={() => addToCart(item)}
-                  className="w-full py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800"
+                  onClick={() => handlePayment(item)}
+                  disabled={paymentLoading[item._id]}
+                  className={`w-full py-2 ${
+                    paymentLoading[item._id]
+                      ? "bg-gray-400 cursor-not-allowed"
+                      : "bg-orange-600 hover:bg-orange-700"
+                  } text-white rounded-lg font-bold flex items-center justify-center`}
                 >
-                  Add to Cart
+                  {paymentLoading[item._id] ? (
+                    <>
+                      <Loader className="animate-spin mr-2" size={20} />
+                      Processing...
+                    </>
+                  ) : (
+                    "Pay Now"
+                  )}
                 </button>
               </div>
             </div>

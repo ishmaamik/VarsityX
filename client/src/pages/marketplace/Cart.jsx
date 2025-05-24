@@ -18,6 +18,7 @@ const Cart = () => {
   const [cartItems, setCartItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [paymentLoading, setPaymentLoading] = useState(false);
 
   // Load cart items
   useEffect(() => {
@@ -303,10 +304,58 @@ const Cart = () => {
                 </div>
 
                 <button
-                  onClick={proceedToCheckout}
-                  className="w-full py-3 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800"
+                  onClick={async () => {
+                    const token = localStorage.getItem("token");
+                    if (!token) {
+                      alert("Please login to proceed with payment");
+                      navigate("/login");
+                      return;
+                    }
+
+                    setPaymentLoading(true);
+                    try {
+                      const res = await axios.post(
+                        "http://localhost:5000/api/payment/ssl",
+                        {
+                          amount: calculateTotal().toFixed(2),
+                        },
+                        {
+                          headers: {
+                            Authorization: `Bearer ${token}`,
+                          },
+                        }
+                      );
+
+                      if (res.data?.GatewayPageURL) {
+                        window.location.href = res.data.GatewayPageURL;
+                      } else {
+                        throw new Error("No gateway URL received");
+                      }
+                    } catch (err) {
+                      console.error("Payment initialization failed:", err);
+                      alert(
+                        err.response?.data?.error ||
+                          "Payment failed. Please try again."
+                      );
+                    } finally {
+                      setPaymentLoading(false);
+                    }
+                  }}
+                  disabled={paymentLoading || cartItems.length === 0}
+                  className={`w-full py-3 ${
+                    paymentLoading
+                      ? "bg-gray-400 cursor-not-allowed"
+                      : "bg-orange-600 hover:bg-orange-700"
+                  } text-white rounded-lg font-bold flex items-center justify-center`}
                 >
-                  Proceed to Checkout
+                  {paymentLoading ? (
+                    <>
+                      <Loader className="animate-spin mr-2" size={20} />
+                      Processing...
+                    </>
+                  ) : (
+                    "Pay Now"
+                  )}
                 </button>
 
                 <div className="mt-4 text-sm text-gray-600 dark:text-gray-400">
