@@ -27,6 +27,7 @@ import path from 'path';
 import authRoutes from './routes/auth.js';
 import universityRoutes from './routes/universityRoutes.js';
 import bidRoutes from './routes/bidRoutes.js';
+import studentAdminRoutes from './routes/studentAdminRoutes.js';
 
 dotenv.config();
 
@@ -91,6 +92,7 @@ mongoose.connect(process.env.MONGO_URI)
     app.use('/api/users', userRoutes);
     app.use('/api/universities', universityRoutes);
     app.use('/api/bids', bidRoutes);  // Register bid routes
+    app.use('/api/student-admin', studentAdminRoutes);  // Register student admin routes
 
     // Error handler
     app.use((err, req, res, next) => {

@@ -23,6 +23,7 @@ import {
 import { useNavigate } from "react-router-dom";
 import AdminSidebar from "./AdminSidebar";
 import axios from "axios";
+import StudentAdminManagement from './StudentAdminManagement';
 
 const AdminPanel = () => {
     const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -355,6 +356,10 @@ const AdminPanel = () => {
                             <h2 className="text-2xl font-bold mb-6">Destinations</h2>
                             {/* Destination management content would go here */}
                         </div>
+                    )}
+
+                    {activeMenu === "users-student-admins" && (
+                        <StudentAdminManagement />
                     )}
                 </main>
             </div>
