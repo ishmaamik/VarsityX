@@ -44,8 +44,15 @@ const ListingDetail = () => {
     const fetchListing = async () => {
       try {
         setLoading(true);
-        const response = await axios.get(`http://localhost:5000/marketplace/${id}`);
-        setListing(response.data.listing);
+        const [listingResponse, bidsResponse] = await Promise.all([
+          axios.get(`http://localhost:5000/marketplace/${id}`),
+          axios.get(`http://localhost:5000/api/bids/listings/${id}`)
+        ]);
+        
+        setListing({
+          ...listingResponse.data.listing,
+          bids: bidsResponse.data.bids || []
+        });
       } catch (err) {
         setError(err.response?.data?.message || 'Failed to fetch listing');
       } finally {
@@ -86,28 +93,26 @@ const ListingDetail = () => {
         return;
       }
       
-      await axios.post(`http://localhost:5000/marketplace/${id}/bid`, 
-        { amount: bidAmount },
+      const response = await axios.post(
+        `http://localhost:5000/api/bids/listings/${id}/bid`,
+        { amount: parseFloat(bidAmount) },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      
-      // Update local state
-      setListing(prev => ({
-        ...prev,
-        currentBid: bidAmount,
-        bids: [
-          ...prev.bids,
-          {
-            bidder: { _id: localStorage.getItem('userId'), displayName: localStorage.getItem('username') },
-            amount: bidAmount,
-            time: new Date().toISOString()
-          }
-        ]
-      }));
-      
-      setBidAmount('');
+
+      if (response.data.success) {
+        // Update listing with new bid
+        setListing(prev => ({
+          ...prev,
+          currentBid: parseFloat(bidAmount),
+          bids: [...(prev.bids || []), response.data.bid]
+        }));
+        
+        setBidAmount('');
+        toast.success('Bid placed successfully!');
+      }
     } catch (err) {
       console.error('Error placing bid:', err);
+      toast.error(err.response?.data?.message || 'Failed to place bid');
     }
   };
 
@@ -480,7 +485,7 @@ const ListingDetail = () => {
                       <div>
                         <p className="font-medium dark:text-white">{bid.bidder.displayName}</p>
                         <p className="text-sm text-gray-500 dark:text-gray-400">
-                          {new Date(bid.time).toLocaleString()}
+                          {new Date(bid.createdAt).toLocaleString()}
                         </p>
                       </div>
                       <span className="text-lg font-bold text-blue-600 dark:text-blue-400">৳{bid.amount}</span>
