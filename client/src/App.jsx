@@ -5,8 +5,8 @@ import { useState, useEffect } from "react";
 import { Login, Register } from "./pages/AuthPages";
 import { ThemeProvider } from "./context/ThemeContext";
 import { AnimatePresence } from "framer-motion";
-
-
+import Home from "./pages/Home";
+import Sidebar from "./components/Sidebar";
 
 function AppContent() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -38,6 +38,17 @@ function AppContent() {
 
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+
+        <Route path="/home" element={
+          <div className="flex h-screen overflow-hidden">
+            <Sidebar open={sidebarOpen} setOpen={setSidebarOpen} />
+            <div 
+              className={`flex-1 overflow-auto transition-all duration-300 ease-in-out`}
+            >
+              <Home />
+            </div>
+          </div>
+        }/>
       </Routes>
     </AnimatePresence>
   );
