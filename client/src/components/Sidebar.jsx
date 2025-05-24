@@ -19,6 +19,12 @@ import {
   GraduationCap,
   History,
   MapPin,
+  Book,
+  Laptop,
+  Bike,
+  DollarSign,
+  ShoppingCart,
+  Tag,
 } from "lucide-react";
 
 const Sidebar = ({ open, setOpen }) => {
@@ -31,37 +37,80 @@ const Sidebar = ({ open, setOpen }) => {
   };
 
   const Menus = [
-    { title: "Dashboard", icon: <LayoutDashboard size={20} />, path: "/" },
+    { title: "Dashboard", icon: <LayoutDashboard size={20} />, path: "/home" },
     { title: "Browse", icon: <ShoppingBag size={20} />, path: "/marketplace" },
-    { title: "My Listings", icon: <Book size={20} />, path: "/listings" },
-    { title: "Electronics", icon: <Laptop size={20} />, path: "/electronics" },
-    { title: "Transport", icon: <Bike size={20} />, gap: true, path: "/transport" },
-    { title: "Services", icon: <MessageSquare size={20} />, path: "/services" },
-    { title: "Search", icon: <Search size={20} />, path: "/search" },
     {
       title: "Sell Item",
       icon: <PlusCircle size={20} />,
-      gap: true,
-      path: "/sell",
+      path: "/marketplace/sell",
     },
-    { title: "My Listings", icon: <History size={20} />, path: "/my-listings" },
-    { title: "Saved Items", icon: <Heart size={20} />, path: "/favorites" },
-    { title: "Messages", icon: <MessageSquare size={20} />, path: "/messages" },
+    { title: "Buy", icon: <DollarSign size={20} />, path: "/marketplace/buy" },
+    {
+      title: "Cart",
+      icon: <ShoppingCart size={20} />,
+      path: "/marketplace/cart",
+    },
+    { title: "My Listings", icon: <Book size={20} />, path: "/my-listings" },
+    {
+      title: "Categories",
+      icon: <Book size={20} />,
+      gap: true,
+      submenu: [
+        {
+          title: "Textbooks",
+          icon: <Book size={20} />,
+          path: "/marketplace/category/textbooks",
+        },
+        {
+          title: "Electronics",
+          icon: <Laptop size={20} />,
+          path: "/marketplace/category/electronics",
+        },
+        {
+          title: "Transport",
+          icon: <Bike size={20} />,
+          path: "/marketplace/category/transport",
+        },
+        {
+          title: "Tutoring",
+          icon: <GraduationCap size={20} />,
+          path: "/marketplace/category/tutoring",
+        },
+        {
+          title: "Skill Exchange",
+          icon: <MessageSquare size={20} />,
+          path: "/marketplace/category/skill-exchange",
+        },
+      ],
+    },
+    {
+      title: "Price-Advisor",
+      icon: <Tag size={20} />,
+      gap: true,
+      path: "/price-advisor",
+    },
+    {
+      title: "Scam-check",
+      icon: <Settings size={20} />,
+      gap: true,
+      path: "/scam",
+    },
     {
       title: "Safe Meetups",
       icon: <MapPin size={20} />,
       path: "/safe-meetups",
     },
+    { title: "Saved Items", icon: <Heart size={20} />, path: "/favorites" },
+    {
+      title: "Messages",
+      icon: <MessageSquare size={20} />,
+      gap: true,
+      path: "/messages",
+    },
     {
       title: "Notifications",
       icon: <Bell size={20} />,
-      gap: true,
       path: "/notifications",
-    },
-    {
-      title: "Verification",
-      icon: <ShieldCheck size={20} />,
-      path: "/verification",
     },
     { title: "Profile", icon: <User size={20} />, path: "/profile" },
     {
@@ -88,7 +137,11 @@ const Sidebar = ({ open, setOpen }) => {
           >
             <GraduationCap size={24} />
           </div>
-          <h1 className={`text-xl font-bold tracking-wide transition-all duration-300 ${!open && "scale-0"}`}>
+          <h1
+            className={`text-xl font-bold tracking-wide transition-all duration-300 ${
+              !open && "scale-0"
+            }`}
+          >
             VarsityX
           </h1>
         </div>

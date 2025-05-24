@@ -1,18 +1,22 @@
 import React from "react";
+import axios from "axios";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Login, Register } from "./pages/AuthPages";
 import { ThemeProvider } from "./context/ThemeContext";
 import { AnimatePresence } from "framer-motion";
 import Home from "./pages/Home";
 import Sidebar from "./components/Sidebar";
-import SafeMeetups from "./pages/SafeMeetups";
-import ImageUploader from './components/ImageUploader';
+import Landing from "./pages/Landing";
 import MarketplaceHome from "./pages/marketplace/MarketPlaceHome";
 import BuyPage from "./pages/marketplace/BuyPage";
 import SellPage from "./pages/marketplace/SellPage";
 import ListingDetail from "./pages/marketplace/ListingDetail";
 import Cart from "./pages/marketplace/Cart";
+import SafeMeetups from "./pages/SafeMeetups";
+import CampusNavigation from "./components/CampusNavigation";
+import ImageUploader from "./components/ImageUploader"
+import PriceAdvisorPage from "./pages/PriceAdvisorPage";
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
@@ -38,12 +42,185 @@ const Layout = ({ children }) => {
 };
 
 function AppContent() {
+  const API_BASE = "http://localhost:5000";
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!token) return;
+
+    axios
+      .get(`${API_BASE}/user/user-data`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      .then((res) => setUser(res.data))
+      .catch((err) => console.error("Failed to fetch user data:", err));
+  }, []);
+
   return (
     <AnimatePresence mode="wait">
       <Routes>
         {/* Public Routes */}
+        <Route path="/" element={<Landing />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+
+        {/* Protected Routes */}
+        <Route
+          path="/home"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <Home />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Marketplace Routes */}
+        <Route
+          path="/marketplace"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <MarketplaceHome />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/marketplace/buy"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <BuyPage />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/marketplace/sell"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <SellPage />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/marketplace/listing/:id"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <ListingDetail />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/marketplace/cart"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <Cart />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/marketplace/category/:category"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <BuyPage />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+
+        {/* User Routes */}
+        <Route
+          path="/my-listings"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <MarketplaceHome />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/favorites"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <MarketplaceHome />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/messages"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <div>Messages Component</div>
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/notifications"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <div>Notifications Component</div>
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/profile"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <div>Profile Component</div>
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/scam"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <ImageUploader/>
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/settings"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <div>Settings Component</div>
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
 
         <Route
           path="/safe-meetups"
@@ -57,33 +234,19 @@ function AppContent() {
         />
 
         <Route
-          path="/image-uploader"
+          path="/price-advisor"
           element={
             <ProtectedRoute>
               <Layout>
-                <ImageUploader />
+                <PriceAdvisorPage />
               </Layout>
             </ProtectedRoute>
           }
         />
 
         {/* Redirect any unknown routes to home */}
-        <Route path="*" element={<Navigate to="/" replace />} />
-        <Route path="/marketplace" element={<MarketplaceHome />} />
-        <Route path="/marketplace/buy" element={<BuyPage />} />
-        <Route path="/marketplace/sell" element={<SellPage />} />
-        <Route path="/marketplace/listing/:id" element={<ListingDetail />} />
-        <Route path="/marketplace/cart" element={<Cart />} />
-        
-        <Route path="/home" element={
-          <ProtectedRoute>
-            <Layout>
-              <Home />
-            </Layout>
-          </ProtectedRoute>
-        }/>
+        <Route path="*" element={<Navigate to="/home" replace />} />
       </Routes>
-      
     </AnimatePresence>
   );
 }

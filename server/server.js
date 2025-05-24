@@ -13,6 +13,7 @@ import reviewRoutes from './routes/reviewRoutes.js';
 import createUploadRouter from './routes/uploadRoutes.js';
 import { createUpload } from './config/upload.js';
 import './config/passport.js';
+import priceAdvisorRoutes from './routes/priceAdvisorRoutes.js';
 
 dotenv.config();
 
@@ -58,6 +59,7 @@ mongoose.connect(process.env.MONGO_URI)
     app.use('/orders', orderRoutes);
     app.use('/reviews', reviewRoutes);
     app.use('/upload', createUploadRouter(upload));
+    app.use('/api/price-advisor', priceAdvisorRoutes)
 
     // File serving route
     app.get('/file/:filename', (req, res) => {
