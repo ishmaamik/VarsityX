@@ -16,7 +16,10 @@ const handleMulterError = (err, req, res, next) => {
     next();
 };
 
-// Protected routes
+// Public route for file retrieval
+router.get('/file/:filename', getFile);
+
+// Protected routes below this line
 router.use(protect);
 
 // File upload route with error handling
@@ -34,8 +37,5 @@ router.post('/file/upload',
     },
     uploadFile
 );
-
-// Public route for file retrieval
-router.get('/file/:filename', getFile);
 
 export default router;

@@ -151,7 +151,7 @@ export const getMessages = async (req, res) => {
 export const sendMessage = async (req, res) => {
   try {
     const { conversationId } = req.params;
-    const { text, type } = req.body;
+    const { text, type, file } = req.body;
 
     // Check if user is participant
     const conversation = await Conversation.findOne({
@@ -166,12 +166,28 @@ export const sendMessage = async (req, res) => {
       });
     }
 
-    const message = new Message({
+    // Create message object based on type
+    const messageData = {
       conversation: conversationId,
       sender: req.user.userId,
-      text,
       type: type || 'text'
-    });
+    };
+
+    // Handle different message types
+    if (type === 'file') {
+      messageData.file = {
+        url: file.url,
+        type: file.type // 'image' or 'pdf'
+      };
+      // Add optional text description
+      if (text) {
+        messageData.text = text;
+      }
+    } else {
+      messageData.text = text;
+    }
+
+    const message = new Message(messageData);
 
     await message.save();
     await message.populate('sender', 'displayName photo');

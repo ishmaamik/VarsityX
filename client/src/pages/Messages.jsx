@@ -16,6 +16,8 @@ import { io } from "socket.io-client";
 import { toast } from "react-hot-toast";
 import { FiDownload, FiClock } from "react-icons/fi";
 
+const SERVER_URL = 'http://localhost:5000';
+
 const Messages = () => {
   const location = useLocation();
   const [conversations, setConversations] = useState([]);
@@ -321,14 +323,22 @@ const Messages = () => {
   const downloadMedia = async (e, fileUrl) => {
     e.preventDefault();
     try {
-      const response = await axios.get(`http://localhost:5000/upload/file/${fileUrl}`, {
+      // Create an axios instance with auth headers for downloads
+      const authAxios = axios.create({
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+
+      const response = await authAxios.get(fileUrl, {
         responseType: 'blob'
       });
+      
       const blob = new Blob([response.data]);
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = fileUrl.split('/').pop(); // Get filename from URL
+      link.download = decodeURIComponent(fileUrl.split('/').pop());
       document.body.appendChild(link);
       link.click();
       link.remove();
@@ -348,21 +358,35 @@ const Messages = () => {
 
     try {
       const token = localStorage.getItem('token');
+      if (!token) {
+        navigate('/login');
+        return;
+      }
+
       // Upload the file
-      const uploadResponse = await axios.post('http://localhost:5000/upload/file/upload', formData, {
+      const uploadResponse = await axios.post(`${SERVER_URL}/upload/file/upload`, formData, {
         headers: { 
           Authorization: `Bearer ${token}`,
           'Content-Type': 'multipart/form-data'
         }
       });
 
-      // Send message with the file URL as text
+      if (!uploadResponse.data.success) {
+        throw new Error(uploadResponse.data.message || 'Upload failed');
+      }
+
+      // Send message with the file information
+      const messageData = {
+        type: 'file',
+        file: {
+          url: uploadResponse.data.url,
+          type: file.type.startsWith('image/') ? 'image' : 'pdf'
+        }
+      };
+
       const response = await axios.post(
         `/api/messages/conversations/${selectedChat._id}/messages`,
-        { 
-          text: uploadResponse.data,
-          type: 'file'
-        },
+        messageData,
         { 
           headers: { 
             Authorization: `Bearer ${token}`,
@@ -371,12 +395,14 @@ const Messages = () => {
         }
       );
 
-      if (response.data.success) {
-        // The message will be added through the socket event
+      if (!response.data.success) {
+        throw new Error(response.data.message || 'Failed to send message');
       }
+
+      // The message will be added through the socket event
     } catch (error) {
       console.error('Error uploading file:', error);
-      toast.error('Failed to upload file');
+      toast.error(error.message || 'Failed to upload file');
     }
   };
 
@@ -681,26 +707,30 @@ const Messages = () => {
                         : "bg-white dark:bg-gray-800 text-gray-800 dark:text-white"
                     }`}
                   >
-                    {message.type === 'file' ? (
+                    {message.type === 'file' && (message.file || message.text) ? (
                       <div className="mb-2">
-                        {message.text.toLowerCase().endsWith('.pdf') ? (
+                        {(message.file?.type === 'pdf' || (message.text && message.text.toLowerCase().endsWith('.pdf'))) ? (
                           <div className="flex items-center gap-2">
                             <img 
                               src={iconPDF}
                               alt="PDF icon" 
                               className="w-10 h-10"
                             />
-                            <span className="text-sm">{message.text.split('/').pop()}</span>
+                            <span className="text-sm">
+                              {message.file?.url 
+                                ? decodeURIComponent(message.file.url.split('/').pop())
+                                : decodeURIComponent(message.text.split('/').pop())}
+                            </span>
                           </div>
                         ) : (
                           <div className="relative">
                             <img 
-                              src={`http://localhost:5000/upload/file/${message.text}`}
+                              src={message.file?.url || `${SERVER_URL}/upload/file/${message.text}`}
                               alt="Message attachment" 
                               className="max-w-full rounded-lg cursor-pointer"
-                              onClick={() => window.open(`http://localhost:5000/upload/file/${message.text}`, '_blank')}
+                              onClick={() => window.open(message.file?.url || `${SERVER_URL}/upload/file/${message.text}`, '_blank')}
                               onError={(e) => {
-                                e.target.onerror = null; // Prevent infinite loop
+                                e.target.onerror = null;
                                 e.target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgZmlsbC1ydWxlPSJldmVub2RkIiBjbGlwLXJ1bGU9ImV2ZW5vZGQiPjxwYXRoIGQ9Ik0yNCAyNGgtMjR2LTI0aDI0djI0em0tMi0yMmgtMjB2MjBoMjB2LTIwem0tNC4xMTggMTQuMDY0Yy0uMzk5LjM5OS0uOTM3LjYxOS0xLjUwNi42MTlzLTEuMTA3LS4yMi0xLjUwNi0uNjE5bC0yLjg3LTIuODdsLTIuODcgMi44N2MtLjM5OS4zOTktLjkzNy42MTktMS41MDYuNjE5cy0xLjEwNy0uMjItMS41MDYtLjYxOWMtLjgzMi0uODMyLS44MzItMi4xOCAwLTMuMDExbDIuODctMi44Ny0yLjg3LTIuODdjLS44MzItLjgzMi0uODMyLTIuMTggMC0zLjAxMSAxLjY2NC0xLjY2NCA0LjM1OC0xLjY2NCA2LjAyMiAwbDIuODcgMi44NyAyLjg3LTIuODdjMS42NjQtMS42NjQgNC4zNTgtMS42NjQgNi4wMjIgMCAuODMyLjgzMi44MzIgMi4xOCAwIDMuMDExbC0yLjg3IDIuODcgMi44NyAyLjg3Yy44MzIuODMyLjgzMiAyLjE4IDAgMy4wMTF6Ii8+PC9zdmc+';
                               }}
                             />
@@ -708,7 +738,7 @@ const Messages = () => {
                         )}
                         <div className="flex items-center gap-2 mt-1">
                           <button 
-                            onClick={(e) => downloadMedia(e, message.text)}
+                            onClick={(e) => downloadMedia(e, message.file?.url || `${SERVER_URL}/upload/file/${message.text}`)}
                             className="hover:underline flex items-center gap-1 text-xs"
                           >
                             <FiDownload size={12} />
@@ -721,17 +751,19 @@ const Messages = () => {
                         </div>
                       </div>
                     ) : (
-                      <>
-                        <p>{message.text}</p>
-                        <div className="flex items-center justify-end gap-1 mt-1">
-                          <span className="text-xs text-gray-200">
+                      <div className="mb-2">
+                        <p className={`${
+                          message.sender._id === currentUser?._id
+                            ? "text-white"
+                            : "text-gray-800 dark:text-gray-200"
+                        }`}>{message.text}</p>
+                        <div className="flex items-center justify-end mt-1">
+                          <div className="flex items-center text-xs text-gray-200">
+                            <FiClock className="mr-1" size={12} />
                             {formatTime(message.createdAt)}
-                          </span>
-                          {message.sender._id === currentUser?._id && (
-                            <CheckCheck size={16} className="text-gray-200" />
-                          )}
+                          </div>
                         </div>
-                      </>
+                      </div>
                     )}
                   </div>
                 </div>
