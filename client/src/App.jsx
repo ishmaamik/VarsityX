@@ -7,6 +7,11 @@ import { ThemeProvider } from "./context/ThemeContext";
 import { AnimatePresence } from "framer-motion";
 import Home from "./pages/Home";
 import Sidebar from "./components/Sidebar";
+import MarketplaceHome from "./pages/marketplace/MarketPlaceHome";
+import BuyPage from "./pages/marketplace/BuyPage";
+import SellPage from "./pages/marketplace/SellPage";
+import ListingDetail from "./pages/marketplace/ListingDetail";
+import Cart from "./pages/marketplace/Cart";
 
 function AppContent() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -38,7 +43,11 @@ function AppContent() {
 
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
-
+        <Route path="/marketplace" element={<MarketplaceHome />} />
+        <Route path="/marketplace/buy" element={<BuyPage />} />
+        <Route path="/marketplace/sell" element={<SellPage />} />
+        <Route path="/marketplace/listing/:id" element={<ListingDetail />} />
+        <Route path="/marketplace/cart" element={<Cart />} />
         <Route path="/home" element={
           <div className="flex h-screen overflow-hidden">
             <Sidebar open={sidebarOpen} setOpen={setSidebarOpen} />
