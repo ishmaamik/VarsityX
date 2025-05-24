@@ -13,6 +13,7 @@ import BuyPage from "./pages/marketplace/BuyPage";
 import SellPage from "./pages/marketplace/SellPage";
 import ListingDetail from "./pages/marketplace/ListingDetail";
 import Cart from "./pages/marketplace/Cart";
+import PaymentStatus from "./pages/marketplace/PaymentStatus";
 import SafeMeetups from "./pages/SafeMeetups";
 import Messages from "./pages/Messages";
 import CampusNavigation from "./components/CampusNavigation";
@@ -51,6 +52,14 @@ function AppContent() {
         <Route path="/" element={<Landing />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+
+        {/* Payment Status Route - Must be before other routes to handle query parameters */}
+        <Route
+          path="/marketplace/payment-status"
+          element={
+            <PaymentStatus />
+          }
+        />
 
         {/* Protected Routes */}
         <Route

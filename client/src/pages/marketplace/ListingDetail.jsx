@@ -122,10 +122,10 @@ const ListingDetail = () => {
         );
         // Update local state
         setCartItems(prev => {
-          const existing = prev.find(item => item.listing._id === listing._id);
+          const existing = prev.find(item => item.listing?._id === listing._id);
           if (existing) {
             return prev.map(item => 
-              item.listing._id === listing._id 
+              item.listing?._id === listing._id 
                 ? { ...item, quantity: item.quantity + quantity } 
                 : item
             );
@@ -135,17 +135,21 @@ const ListingDetail = () => {
       } else {
         // For guest users
         const updated = [...cartItems];
-        const existing = updated.find(item => item._id === listing._id);
+        const existing = updated.find(item => item.listing?._id === listing._id);
         if (existing) {
           existing.quantity += quantity;
         } else {
-          updated.push({ ...listing, quantity });
+          updated.push({ listing, quantity });
         }
         setCartItems(updated);
         localStorage.setItem('cartItems', JSON.stringify(updated));
       }
+
+      // Show success message
+      alert('Item added to cart successfully!');
     } catch (err) {
       console.error('Error adding to cart:', err);
+      alert('Failed to add item to cart. Please try again.');
     }
   };
 
@@ -210,12 +214,7 @@ const ListingDetail = () => {
             <ArrowLeft className="mr-2" size={18} />
             Back to listings
           </button>
-          <button
-            onClick={toggleDarkMode}
-            className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700"
-          >
-            {darkMode ? <Sun size={20} /> : <Moon size={20} />}
-          </button>
+          
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -223,16 +222,14 @@ const ListingDetail = () => {
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden">
             <div className="h-96 bg-gray-200 dark:bg-gray-700 overflow-hidden">
               {listing.images?.[0] ? (
-                <>
-                  <img 
-                    src={`http://localhost:5000/images/${listing.images[0]}`}
-                    alt={listing.title}
-                    className="w-full h-full object-contain"
-                  />
-                </>
+                <img 
+                  src={`http://localhost:5000/images/${listing.images[0]}`}
+                  alt={listing.title}
+                  className="w-full h-full object-contain"
+                />
               ) : (
                 <div className="w-full h-full flex items-center justify-center text-gray-400">
-                  <Image size={48} />
+                  <ShoppingCart size={48} />
                 </div>
               )}
             </div>

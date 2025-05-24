@@ -1,4 +1,3 @@
-
 import express from 'express';
 import { 
   getCart, 
@@ -7,11 +6,12 @@ import {
   removeFromCart, 
   clearCart 
 } from '../controllers/cartController.js';
-import { authorizeRole } from '../middleware/roleMiddleware.js';
+import { authenticate } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
-router.use(authorizeRole(['User']));
+// Protect all cart routes
+router.use(authenticate);
 
 router.get('/', getCart);
 router.post('/', addToCart);

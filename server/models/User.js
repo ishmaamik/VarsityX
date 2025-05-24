@@ -6,19 +6,22 @@ const userSchema = new mongoose.Schema({
   displayName: {
     type: String,
     required: [true, 'Please provide a display name'],
-    trim: true
+    trim: true,
+    minlength: [2, 'Display name must be at least 2 characters long'],
+    maxlength: [50, 'Display name cannot exceed 50 characters']
   },
   email: {
     type: String,
     required: [true, 'Please provide an email'],
     unique: true,
+    trim: true,
     lowercase: true,
     match: [/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/, 'Please provide a valid email']
   },
   password: {
     type: String,
     required: [true, 'Please provide a password'],
-    minlength: 6,
+    minlength: [6, 'Password must be at least 6 characters long'],
     select: false
   },
   photo: {
@@ -26,19 +29,36 @@ const userSchema = new mongoose.Schema({
     default: null
   },
   university: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'University',
-    required: true
+    type: String,
+    required: [true, 'Please select your university'],
+    enum: {
+      values: ['IUT', 'BUET', 'DU', 'BRAC', 'NSU'],
+      message: 'Please select a valid university'
+    },
+    trim: true
   },
   role: {
     type: String,
-    enum: ['user', 'student-admin', 'admin'],
-    default: 'user'
+    enum: ['User', 'Admin', 'student-admin'],
+    default: 'User'
   },
   isVerified: {
     type: Boolean,
     default: false
   },
+  cart: [{
+    listing: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Listing',
+      required: true
+    },
+    quantity: {
+      type: Number,
+      required: true,
+      min: 1,
+      default: 1
+    }
+  }],
   ratings: [{
     rating: {
       type: Number,
@@ -73,6 +93,10 @@ const userSchema = new mongoose.Schema({
   suspendedBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User'
+  },
+  avatar: {
+    type: String,
+    default: ''
   },
   createdAt: {
     type: Date,

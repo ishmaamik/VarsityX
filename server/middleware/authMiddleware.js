@@ -19,7 +19,7 @@ export const authenticate = async (req, res, next) => {
     
     // Find user and check if token is still valid
     const user = await User.findOne({ 
-      _id: decoded.userId,
+      _id: decoded.userId || decoded.id
     });
 
     if (!user) {
@@ -29,12 +29,21 @@ export const authenticate = async (req, res, next) => {
       });
     }
 
+    if (user.isSuspended) {
+      return res.status(403).json({
+        success: false,
+        message: 'Your account has been suspended',
+        reason: user.suspensionReason
+      });
+    }
+
     // Attach user info to request
     req.user = {
       userId: user._id.toString(),
       email: user.email,
       displayName: user.displayName,
-      role: user.role
+      role: user.role,
+      university: user.university
     };
     
     next();

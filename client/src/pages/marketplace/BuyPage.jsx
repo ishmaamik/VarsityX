@@ -98,10 +98,10 @@ const BuyPage = () => {
         );
         // Update local state
         setCartItems(prev => {
-          const existing = prev.find(item => item.listing._id === product._id);
+          const existing = prev.find(item => item.listing?._id === product._id);
           if (existing) {
             return prev.map(item => 
-              item.listing._id === product._id 
+              item.listing?._id === product._id 
                 ? { ...item, quantity: item.quantity + 1 } 
                 : item
             );
@@ -111,17 +111,21 @@ const BuyPage = () => {
       } else {
         // For guest users
         const updated = [...cartItems];
-        const existing = updated.find(item => item._id === product._id);
+        const existing = updated.find(item => item.listing?._id === product._id);
         if (existing) {
           existing.quantity += 1;
         } else {
-          updated.push({ ...product, quantity: 1 });
+          updated.push({ listing: product, quantity: 1 });
         }
         setCartItems(updated);
         localStorage.setItem('cartItems', JSON.stringify(updated));
       }
+
+      // Show success message
+      alert('Item added to cart successfully!');
     } catch (err) {
       console.error('Error adding to cart:', err);
+      alert('Failed to add item to cart. Please try again.');
     }
   };
 
@@ -148,9 +152,7 @@ const BuyPage = () => {
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-bold dark:text-white">Browse Marketplace</h1>
           <div className="flex items-center space-x-4">
-            <button onClick={toggleDarkMode} className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700">
-              {darkMode ? <Sun size={20} /> : <Moon size={20} />}
-            </button>
+            
             <button onClick={() => navigate('/marketplace/cart')}
               className="p-2 rounded hover:bg-gray-200 dark:hover:bg-gray-700 relative">
               <ShoppingCart size={20} className="text-gray-700 dark:text-gray-300" />
@@ -271,7 +273,7 @@ const BuyPage = () => {
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-gray-400">
-                    <Image size={48} />
+                    <ShoppingCart size={48} />
                   </div>
                 )}
               </div>

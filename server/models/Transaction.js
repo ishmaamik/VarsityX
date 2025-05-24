@@ -1,20 +1,15 @@
 import mongoose from 'mongoose';
 
 const transactionSchema = new mongoose.Schema({
-  listing: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Listing',
-    required: true
-  },
-  buyer: {
+  user: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
     required: true
   },
-  seller: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true
+  transactionId: {
+    type: String,
+    required: true,
+    unique: true
   },
   amount: {
     type: Number,
@@ -22,31 +17,29 @@ const transactionSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['pending', 'completed', 'cancelled', 'disputed'],
-    default: 'pending'
+    enum: ['Initiated', 'Completed', 'Failed', 'Cancelled'],
+    default: 'Initiated'
   },
-  buyerReview: {
-    rating: {
-      type: Number,
-      min: 1,
-      max: 5
-    },
-    comment: String,
-    createdAt: Date
+  paymentDetails: {
+    validationId: String,
+    amount: Number,
+    cardType: String,
+    cardNumber: String,
+    bankTransactionId: String,
+    status: String,
+    transactionDate: Date
   },
-  sellerReview: {
-    rating: {
-      type: Number,
-      min: 1,
-      max: 5
-    },
-    comment: String,
-    createdAt: Date
+  createdAt: {
+    type: Date,
+    default: Date.now
   },
-  completedAt: Date,
-  cancelledAt: Date,
-  cancelReason: String
-}, { timestamps: true });
+  updatedAt: {
+    type: Date,
+    default: Date.now
+  }
+}, {
+  timestamps: true
+});
 
 const Transaction = mongoose.model('Transaction', transactionSchema);
 

@@ -188,12 +188,7 @@ const SellPage = () => {
         {/* Header with theme toggle */}
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-bold dark:text-white">Sell Your Item or Service</h1>
-          <button
-            onClick={toggleDarkMode}
-            className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 dark:text-white"
-          >
-            {darkMode ? <Sun size={20} /> : <Moon size={20} />}
-          </button>
+          
         </div>
         
         {error && (

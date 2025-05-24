@@ -72,10 +72,10 @@ const MarketplaceHome = () => {
         );
         // Update local state
         setCartItems(prev => {
-          const existing = prev.find(item => item.listing._id === product._id);
+          const existing = prev.find(item => item.listing?._id === product._id);
           if (existing) {
             return prev.map(item => 
-              item.listing._id === product._id 
+              item.listing?._id === product._id 
                 ? { ...item, quantity: item.quantity + 1 } 
                 : item
             );
@@ -85,17 +85,21 @@ const MarketplaceHome = () => {
       } else {
         // For guest users
         const updated = [...cartItems];
-        const existing = updated.find(item => item._id === product._id);
+        const existing = updated.find(item => item.listing?._id === product._id);
         if (existing) {
           existing.quantity += 1;
         } else {
-          updated.push({ ...product, quantity: 1 });
+          updated.push({ listing: product, quantity: 1 });
         }
         setCartItems(updated);
         localStorage.setItem('cartItems', JSON.stringify(updated));
       }
+
+      // Show success message
+      alert('Item added to cart successfully!');
     } catch (err) {
       console.error('Error adding to cart:', err);
+      alert('Failed to add item to cart. Please try again.');
     }
   };
 
@@ -134,12 +138,7 @@ const MarketplaceHome = () => {
                 />
               </div>
               
-              <button 
-                onClick={toggleDarkMode}
-                className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700"
-              >
-                {darkMode ? <Sun size={20} /> : <Moon size={20} />}
-              </button>
+              
               
               <button className="p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-700 relative">
                 <Bell size={20} className="text-gray-700 dark:text-gray-300" />
@@ -222,7 +221,7 @@ const MarketplaceHome = () => {
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center bg-gray-200 dark:bg-gray-700">
-                      <Image size={48} className="text-gray-400" />
+                      <ShoppingCart size={48} className="text-gray-400" />
                     </div>
                   )}
                 </div>

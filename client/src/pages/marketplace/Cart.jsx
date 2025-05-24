@@ -112,8 +112,35 @@ const Cart = () => {
     return subtotal + shipping;
   };
 
-  const proceedToCheckout = () => {
-    navigate('/marketplace/checkout');
+  const handleCheckout = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        navigate('/login');
+        return;
+      }
+
+      const response = await axios.post(
+        'http://localhost:5000/api/payment/ssl',
+        {
+          amount: calculateTotal().toFixed(2),
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (response.data?.GatewayPageURL) {
+        window.location.href = response.data.GatewayPageURL;
+      } else {
+        throw new Error('No gateway URL received');
+      }
+    } catch (error) {
+      console.error('Payment initialization failed:', error);
+      alert(error.response?.data?.error || 'Payment failed. Please try again.');
+    }
   };
 
   if (loading) {
@@ -146,12 +173,7 @@ const Cart = () => {
           </button>
           
           <div className="flex items-center space-x-4">
-            <button
-              onClick={toggleDarkMode}
-              className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700"
-            >
-              {darkMode ? <Sun size={20} /> : <Moon size={20} />}
-            </button>
+            
             <h1 className="text-2xl md:text-3xl font-bold dark:text-white">Your Cart</h1>
           </div>
           
@@ -181,15 +203,14 @@ const Cart = () => {
                 return (
                   <div 
                     key={item._id} 
-                    className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 mb-4 cursor-pointer hover:shadow-lg transition-shadow"
-                    onClick={() => navigate(`/marketplace/listing/${listing._id}`)}
+                    className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 mb-4 hover:shadow-lg transition-shadow"
                   >
                     <div className="flex flex-col sm:flex-row">
                       {/* Item Image */}
                       <div className="w-full sm:w-32 h-32 bg-gray-200 dark:bg-gray-700 rounded-lg overflow-hidden mb-4 sm:mb-0">
                         {listing.images?.[0] ? (
                           <img 
-                            src={listing.images[0]} 
+                            src={`http://localhost:5000/images/${listing.images[0]}`}
                             alt={listing.title}
                             className="w-full h-full object-cover"
                           />
@@ -201,47 +222,44 @@ const Cart = () => {
                       </div>
 
                       {/* Item Details */}
-                      <div className="flex-grow sm:ml-6">
-                        <div className="flex justify-between">
-                          <h3 className="text-lg font-bold dark:text-white">{listing.title}</h3>
-                          <button 
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              removeItem(item._id);
-                            }}
-                            className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
+                      <div className="flex-1 sm:ml-4">
+                        <div className="flex justify-between items-start mb-2">
+                          <div>
+                            <h3 className="text-lg font-bold dark:text-white">{listing.title}</h3>
+                            <p className="text-sm text-gray-600 dark:text-gray-400">{listing.university}</p>
+                          </div>
+                          <button
+                            onClick={() => removeItem(item._id)}
+                            className="p-2 text-red-500 hover:bg-red-50 rounded-full dark:hover:bg-red-900/30"
                           >
                             <Trash2 size={20} />
                           </button>
                         </div>
-                        
-                        <p className="text-gray-600 dark:text-gray-300 mb-2">{listing.category}</p>
-                        <p className="text-blue-600 dark:text-blue-400 font-bold mb-4">৳{listing.price}</p>
 
-                        {/* Quantity Selector */}
-                        <div className="flex items-center">
-                          <span className="mr-4 dark:text-gray-300">Quantity:</span>
-                          <div className="flex items-center border rounded-lg dark:border-gray-600">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                updateQuantity(item._id, item.quantity - 1);
-                              }}
-                              className="px-3 py-1 hover:bg-gray-100 dark:hover:bg-gray-700"
-                            >
-                              -
-                            </button>
-                            <span className="px-4 py-1 border-x dark:border-gray-600 dark:text-gray-300">{item.quantity}</span>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                updateQuantity(item._id, item.quantity + 1);
-                              }}
-                              className="px-3 py-1 hover:bg-gray-100 dark:hover:bg-gray-700"
-                            >
-                              +
-                            </button>
+                        <div className="flex justify-between items-center mt-4">
+                          <div className="flex items-center">
+                            <span className="mr-4 dark:text-gray-300">Quantity:</span>
+                            <div className="flex items-center border rounded-lg dark:border-gray-600">
+                              <button
+                                onClick={() => updateQuantity(item._id, item.quantity - 1)}
+                                className="px-3 py-1 hover:bg-gray-100 dark:hover:bg-gray-700"
+                              >
+                                -
+                              </button>
+                              <span className="px-4 py-1 border-x dark:border-gray-600 dark:text-gray-300">
+                                {item.quantity}
+                              </span>
+                              <button
+                                onClick={() => updateQuantity(item._id, item.quantity + 1)}
+                                className="px-3 py-1 hover:bg-gray-100 dark:hover:bg-gray-700"
+                              >
+                                +
+                              </button>
+                            </div>
                           </div>
+                          <span className="font-bold text-lg dark:text-white">
+                            ৳{((listing.price || 0) * item.quantity).toFixed(2)}
+                          </span>
                         </div>
                       </div>
                     </div>
@@ -272,10 +290,11 @@ const Cart = () => {
                 </div>
 
                 <button
-                  onClick={proceedToCheckout}
-                  className="w-full py-3 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800"
+                  onClick={handleCheckout}
+                  disabled={cartItems.length === 0}
+                  className="w-full py-3 bg-orange-600 text-white rounded-lg font-bold hover:bg-orange-700 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center"
                 >
-                  Proceed to Checkout
+                  Proceed to Payment
                 </button>
 
                 <div className="mt-4 text-sm text-gray-600 dark:text-gray-400">
