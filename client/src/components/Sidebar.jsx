@@ -35,7 +35,7 @@ const Sidebar = ({ open, setOpen }) => {
 
   const Menus = [
     { title: "Dashboard", icon: <LayoutDashboard size={20} />, path: "/" },
-    { title: "Listings", icon: <Book size={20} />, path: "/listings" },
+    { title: "My Listings", icon: <Book size={20} />, path: "/listings" },
     { title: "Electronics", icon: <Laptop size={20} />, path: "/electronics" },
     {
       title: "Transport",
@@ -78,12 +78,8 @@ const Sidebar = ({ open, setOpen }) => {
           >
             <GraduationCap size={24} />
           </div>
-          <h1
-            className={`text-xl font-bold tracking-wide transition-all duration-300 ${
-              !open && "scale-0"
-            }`}
-          >
-            CampusSwap
+          <h1 className={`text-xl font-bold tracking-wide transition-all duration-300 ${!open && "scale-0"}`}>
+            VarsityX
           </h1>
         </div>
         <button

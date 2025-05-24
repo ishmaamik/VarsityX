@@ -7,9 +7,6 @@ import { ThemeProvider } from "./context/ThemeContext";
 import { AnimatePresence } from "framer-motion";
 import Home from "./pages/Home";
 import Sidebar from "./components/Sidebar";
-import PriceAdvisorPage from "./pages/PriceAdvisorPage"; // ✅ adjust path if needed
-import Payment from "./pages/Payment"; // ✅ adjust path if needed
-
 
 function AppContent() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -39,34 +36,17 @@ function AppContent() {
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
-        <Route
-          path="/home"
-          element={
-            <div className="flex h-screen overflow-hidden">
-              <Sidebar open={sidebarOpen} setOpen={setSidebarOpen} />
-              <div
-                className={`flex-1 overflow-auto transition-all duration-300 ease-in-out`}
-              >
-                <Home />
-              </div>
+
+        <Route path="/home" element={
+          <div className="flex h-screen overflow-hidden">
+            <Sidebar open={sidebarOpen} setOpen={setSidebarOpen} />
+            <div 
+              className={`flex-1 overflow-auto transition-all duration-300 ease-in-out`}
+            >
+              <Home />
             </div>
-          }
-        />
-        <Route
-          path="/price-advisor"
-          element={
-            <div className="flex h-screen overflow-hidden">
-              <Sidebar open={sidebarOpen} setOpen={setSidebarOpen} />
-              <div
-                className={`flex-1 overflow-auto transition-all duration-300 ease-in-out`}
-              >
-                <PriceAdvisorPage />
-              </div>
-            </div>
-          }
-        />
-        <Route path="/payment" element={<Payment />} />
-       
+          </div>
+        }/>
       </Routes>
     </AnimatePresence>
   );
