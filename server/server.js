@@ -15,6 +15,7 @@ import { createUpload } from './config/upload.js';
 import './config/passport.js';
 import priceAdvisorRoutes from './routes/priceAdvisorRoutes.js';
 import chatRoutes from './routes/chat.js';
+import processRouter from './routes/process.js';
 
 dotenv.config();
 
@@ -62,6 +63,7 @@ mongoose.connect(process.env.MONGO_URI)
     app.use('/upload', createUploadRouter(upload));
     app.use('/api/price-advisor', priceAdvisorRoutes);
     app.use('/api/chat', chatRoutes);
+    app.use('/api/process', processRouter);
 
   
 
