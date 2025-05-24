@@ -126,9 +126,41 @@ export const googleOAuth = (req, res) => {
 // Get User Data (accessible by both User and Admin)
 export const getUserData = async (req, res) => {
   try {
-    const user = await User.findById(req.user.userId);
+    const user = await User.findById(req.user._id)
+      .select('-password')
+      .populate('university department');
+    
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
     res.json(user);
-  } catch (err) {
-    res.status(500).json({ message: 'Server error' });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
+export const updateUserProfile = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+    
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    user.name = req.body.name || user.name;
+    user.email = req.body.email || user.email;
+    user.phone = req.body.phone || user.phone;
+    user.university = req.body.university || user.university;
+    user.department = req.body.department || user.department;
+    user.year = req.body.year || user.year;
+    
+    const updatedUser = await user.save();
+    res.json({
+      ...updatedUser._doc,
+      password: undefined
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
   }
 };

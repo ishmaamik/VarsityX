@@ -18,6 +18,11 @@ import Messages from "./pages/Messages";
 import CampusNavigation from "./components/CampusNavigation";
 import ImageUploader from "./components/ImageUploader";
 import PriceAdvisorPage from "./pages/PriceAdvisorPage";
+import Profile from "./pages/Profile";
+import ReviewSystem from "./components/ReviewSystem";
+import Reviews from "./pages/Reviews";
+import ChatAI from "./pages/chatai";
+import TextToImage from "./pages/TextToImage";
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
@@ -195,7 +200,28 @@ function AppContent() {
           element={
             <ProtectedRoute>
               <Layout>
-                <div>Profile Component</div>
+                <Profile />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/reviews/:type/:id"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <ReviewSystem />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/reviews"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <Reviews />
               </Layout>
             </ProtectedRoute>
           }
@@ -240,6 +266,28 @@ function AppContent() {
             <ProtectedRoute>
               <Layout>
                 <PriceAdvisorPage />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/chatai"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <ChatAI />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/text-to-image"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <TextToImage />
               </Layout>
             </ProtectedRoute>
           }

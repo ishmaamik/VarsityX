@@ -5,9 +5,11 @@ import {
   getListing, 
   updateListing, 
   deleteListing,
-  placeBid
+  placeBid,
+  getMyListings
 } from '../controllers/listingController.js';
 import { authorizeRole } from '../middleware/roleMiddleware.js';
+// import { protect } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
@@ -20,5 +22,6 @@ router.post('/', authorizeRole(['User', 'Admin']), createListing);
 router.put('/:id', authorizeRole(['User', 'Admin']), updateListing);
 router.delete('/:id', authorizeRole(['User', 'Admin']), deleteListing);
 router.post('/:id/bid', authorizeRole(['User']), placeBid);
+// router.get('/my-listings', protect, getMyListings);
 
 export default router;

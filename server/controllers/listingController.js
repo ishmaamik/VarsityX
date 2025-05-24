@@ -285,3 +285,16 @@ export const placeBid = async (req, res) => {
     });
   }
 };
+
+// Get my listings
+export const getMyListings = async (req, res) => {
+  try {
+    const listings = await Listing.find({ seller: req.user._id })
+      .sort({ createdAt: -1 })
+      .populate('category');
+    
+    res.json(listings);
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};

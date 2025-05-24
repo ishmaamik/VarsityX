@@ -10,10 +10,10 @@ import {
 } from "lucide-react";
 
 const SafeMeetups = () => {
-  // Initial view centered on IUT
+  // Initial view centered on IUT (updated coordinates)
   const [viewState, setViewState] = useState({
-    longitude: 90.2673,
-    latitude: 23.9633,
+    longitude: 90.37925253472153,
+    latitude: 23.948114973032546,
     zoom: 16,
   });
 
@@ -25,80 +25,153 @@ const SafeMeetups = () => {
   const [selectedType, setSelectedType] = useState("all");
   const [customStartPoint, setCustomStartPoint] = useState(null);
 
-  // IUT-specific locations
+  // Updated IUT-specific locations
   const [safeMeetupLocations] = useState([
     {
       id: 1,
-      name: "IUT Main Gate",
-      type: "security",
-      coordinates: [23.9632, 90.2673],
-      description: "Main entrance with 24/7 security",
-      hours: "Open 24/7",
-      securityFeatures: ["Security Guards", "CCTV", "Visitor Log"],
-      crowdLevel: "High",
+      name: "Administrative Building",
+      type: "administrative",
+      coordinates: [23.948114973032546, 90.37925253472153],
+      description:
+        "The central hub for university administration and management.",
+      image:
+        "https://upload.wikimedia.org/wikipedia/commons/8/8e/Structure_of_the_administrative_building.jpg",
+      hours: "8:00 AM - 4:00 PM",
+      securityFeatures: ["Security Desk", "CCTV", "Visitor Log"],
+      crowdLevel: "Medium",
     },
     {
       id: 2,
-      name: "Academic Building",
+      name: "Central Library",
+      type: "library",
+      coordinates: [23.94814173569619, 90.37964298257778],
+      description:
+        "A comprehensive library offering extensive resources and study spaces.",
+      image:
+        "https://upload.wikimedia.org/wikipedia/commons/3/3e/A_view_of_IUT.jpg",
+      hours: "8:00 AM - 10:00 PM",
+      securityFeatures: ["Librarian", "CCTV", "Security Guard"],
+      crowdLevel: "High",
+    },
+    {
+      id: 3,
+      name: "First Academic Building",
       type: "academic",
-      coordinates: [23.9633, 90.2675],
-      description: "Main academic building with classrooms and labs",
-      hours: "7:00 AM - 10:00 PM",
+      coordinates: [23.94848295916611, 90.37917932573376],
+      description:
+        "Houses classrooms and laboratories for various engineering departments.",
+      image:
+        "https://upload.wikimedia.org/wikipedia/commons/3/3e/A_view_of_IUT.jpg",
+      hours: "8:00 AM - 6:00 PM",
       securityFeatures: ["Security Desk", "ID Card Access", "CCTV"],
       crowdLevel: "Very High",
     },
     {
-      id: 3,
-      name: "Central Library",
-      type: "library",
-      coordinates: [23.9634, 90.2674],
-      description: "Main library with study areas",
-      hours: "8:00 AM - 11:00 PM",
-      securityFeatures: ["Librarian", "CCTV", "Security Guard"],
-      crowdLevel: "Medium",
-    },
-    {
       id: 4,
-      name: "Cafeteria",
-      type: "academic",
-      coordinates: [23.9635, 90.2676],
-      description: "Student dining area",
-      hours: "7:00 AM - 9:00 PM",
-      securityFeatures: ["High Traffic Area", "CCTV"],
+      name: "CDS",
+      type: "recreational",
+      coordinates: [23.948175189019622, 90.38036531117172],
+      description:
+        "A place for student activities, dining, and social gatherings.",
+      image:
+        "https://upload.wikimedia.org/wikipedia/commons/3/3e/A_view_of_IUT.jpg",
+      hours: "9:00 AM - 9:00 PM",
+      securityFeatures: ["High Traffic Area", "CCTV", "Security Guard"],
       crowdLevel: "Very High",
     },
     {
       id: 5,
-      name: "Central Mosque",
-      type: "security",
-      coordinates: [23.9636, 90.2677],
-      description: "Main prayer area",
-      hours: "Open 24/7",
+      name: "Masjid E Zainab, IUT",
+      type: "religious",
+      coordinates: [23.9475316499381, 90.37927741662267],
+      description:
+        "A serene place for prayer and reflection within the campus.",
+      image:
+        "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTwhmTOTfTjifLtc54zp4J4YxT2XKiIHHXI2UuUnvr3V9WSW3ZCG6pNQzHh7htqrk7V9MI&usqp=CAU",
+      hours: "Open during prayer times",
       securityFeatures: ["Well-lit Area", "Security Guards"],
       crowdLevel: "Varies",
     },
     {
       id: 6,
-      name: "Sports Ground",
-      type: "security",
-      coordinates: [23.9631, 90.2678],
-      description: "Open sports ground with track",
-      hours: "6:00 AM - 9:00 PM",
-      securityFeatures: ["Open Space", "Lighting", "Security Patrols"],
-      crowdLevel: "Medium",
+      name: "Second Academic Building",
+      type: "academic",
+      coordinates: [23.948937940662567, 90.37922477970379],
+      description:
+        "A modern facility equipped with advanced laboratories and lecture halls.",
+      image:
+        "https://www.iutoic-dhaka.edu/assets/images/second_academic_building.jpg",
+      hours: "8:00 AM - 6:00 PM",
+      securityFeatures: ["Security Desk", "CCTV", "ID Card Access"],
+      crowdLevel: "High",
     },
     {
       id: 7,
-      name: "Student Center",
+      name: "Third Academic Building",
       type: "academic",
-      coordinates: [23.9637, 90.2676],
-      description: "Student activities and club meeting point",
-      hours: "8:00 AM - 8:00 PM",
-      securityFeatures: ["Security Desk", "CCTV"],
+      coordinates: [23.949017989978323, 90.3777367955881],
+      description:
+        "Dedicated to research and postgraduate studies with specialized facilities.",
+      image:
+        "https://www.iutoic-dhaka.edu/assets/images/third_academic_building.jpg",
+      hours: "8:00 AM - 6:00 PM",
+      securityFeatures: ["Security Desk", "CCTV", "Restricted Access"],
+      crowdLevel: "Medium",
+    },
+    {
+      id: 9,
+      name: "North Hall of Residence",
+      type: "residential",
+      coordinates: [23.94854241625172, 90.38013575271341],
+      description:
+        "Accommodation facility for male students with fully furnished rooms.",
+      image: "https://www.iutoic-dhaka.edu/assets/images/north_hall.jpg",
+      hours: "24/7",
+      securityFeatures: [
+        "Security Guards",
+        "CCTV",
+        "ID Card Access",
+        "Visitor Log",
+      ],
+      crowdLevel: "High",
+    },
+    {
+      id: 10,
+      name: "South Hall of Residence",
+      type: "residential",
+      coordinates: [23.94700090458333, 90.38009004610988],
+      description:
+        "Another accommodation facility for male students with modern amenities.",
+      image: "https://www.iutoic-dhaka.edu/assets/images/south_hall.jpg",
+      hours: "24/7",
+      securityFeatures: [
+        "Security Guards",
+        "CCTV",
+        "ID Card Access",
+        "Visitor Log",
+      ],
+      crowdLevel: "High",
+    },
+    {
+      id: 11,
+      name: "Female Hall of Residence",
+      type: "residential",
+      coordinates: [23.947147274302093, 90.37726046429204],
+      description:
+        "Accommodation facility for female students with secure and comfortable living spaces.",
+      image: "https://www.iutoic-dhaka.edu/assets/images/female_hall.jpg",
+      hours: "24/7",
+      securityFeatures: [
+        "24/7 Security",
+        "CCTV",
+        "Biometric Access",
+        "Strict Visitor Policy",
+      ],
       crowdLevel: "High",
     },
   ]);
 
+  // Update the default starting point to match new coordinates
   useEffect(() => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
@@ -112,8 +185,8 @@ const SafeMeetups = () => {
         },
         (error) => {
           console.error("Error getting location:", error);
-          // Set IUT main gate as default starting point if location access is denied
-          setRouteStart([23.9632, 90.2673]);
+          // Set Administrative Building as default starting point
+          setRouteStart([23.948114973032546, 90.37925253472153]);
         }
       );
     }
