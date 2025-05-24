@@ -16,6 +16,8 @@ import './config/passport.js';
 import priceAdvisorRoutes from './routes/priceAdvisorRoutes.js';
 import chatRoutes from './routes/chat.js';
 import processRouter from './routes/process.js';
+import discordRoutes from './routes/discord.js';  // Discord bot routes
+
 
 dotenv.config();
 
@@ -64,6 +66,8 @@ mongoose.connect(process.env.MONGO_URI)
     app.use('/api/price-advisor', priceAdvisorRoutes);
     app.use('/api/chat', chatRoutes);
     app.use('/api/process', processRouter);
+app.use('/api/discord', discordRoutes);
+
 
   
 
