@@ -16,6 +16,7 @@ import messageRoutes from './routes/messageRoutes.js';
 import './config/passport.js';  // Passport configuration for Google OAuth
 import { createServer } from 'http';
 import initializeSocket from './config/socket.js';
+import paymentRoutes from './routes/payment.js';
 
 dotenv.config();
 
@@ -51,6 +52,8 @@ app.use('/reviews', reviewRoutes);
 app.use('/upload', uploadRoutes);
 app.use('/api/price-advisor', priceAdvisorRoutes);
 app.use('/api/messages', messageRoutes);
+app.use('/api/payment', paymentRoutes);
+
 
 // MongoDB connection
 mongoose.connect(process.env.MONGO_URI).then(() => console.log('MongoDB connected'))
