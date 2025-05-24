@@ -97,73 +97,94 @@ export const getDashboardStats = asyncHandler(async (req, res, next) => {
     });
 });
 
+// Get listing statistics
+export const getListingStats = async (req, res) => {
+  try {
+    const total = await Listing.countDocuments();
+    const pending = await Listing.countDocuments({ status: 'pending' });
+    
+    res.json({
+      success: true,
+      data: {
+        total,
+        pending
+      }
+    });
+  } catch (error) {
+    console.error('Error getting listing stats:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error getting listing stats'
+    });
+  }
+};
+
 // Get pending listings
-export const getPendingListings = asyncHandler(async (req, res, next) => {
-    const listings = await Listing.find({ 
-        status: 'pending',
-        university: req.user.role === 'student-admin' ? req.user.university : { $exists: true }
-    })
-    .populate('seller', 'displayName email photo')
-    .populate('university', 'name');
+export const getPendingListings = async (req, res) => {
+  try {
+    const listings = await Listing.find({ status: 'pending' })
+      .populate('seller', 'displayName email')
+      .populate('university', 'name')
+      .sort('-createdAt');
 
-    res.status(200).json({
-        success: true,
-        count: listings.length,
-        data: listings
+    res.json({
+      success: true,
+      data: listings
     });
-});
-
-// Moderate listing
-export const moderateListing = asyncHandler(async (req, res, next) => {
-    const { action, reason } = req.body;
-
-    if (!['approve', 'reject'].includes(action)) {
-        return next(new ErrorResponse('Invalid moderation action', 400));
-    }
-
-    const listing = await Listing.findById(req.params.id);
-
-    if (!listing) {
-        return next(new ErrorResponse('Listing not found', 404));
-    }
-
-    // Check if student admin has permission for this university
-    if (req.user.role === 'student-admin' && listing.university.toString() !== req.user.university.toString()) {
-        return next(new ErrorResponse('Not authorized to moderate listings from other universities', 403));
-    }
-
-    listing.status = action === 'approve' ? 'approved' : 'rejected';
-    listing.moderationDetails = {
-        moderatedBy: req.user._id,
-        moderatedAt: Date.now(),
-        reason,
-        action
-    };
-
-    await listing.save();
-
-    res.status(200).json({
-        success: true,
-        data: listing
+  } catch (error) {
+    console.error('Error getting pending listings:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error getting pending listings'
     });
-});
+  }
+};
+
+// Get user statistics
+export const getUserStats = async (req, res) => {
+  try {
+    const total = await User.countDocuments();
+    const studentAdmins = await User.countDocuments({ role: 'StudentAdmin' });
+    
+    res.json({
+      success: true,
+      data: {
+        total,
+        studentAdmins
+      }
+    });
+  } catch (error) {
+    console.error('Error getting user stats:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error getting user stats'
+    });
+  }
+};
 
 // Get users with poor ratings
-export const getPoorRatedUsers = asyncHandler(async (req, res, next) => {
+export const getPoorRatedUsers = async (req, res) => {
+  try {
     const users = await User.find({
-        averageRating: { $lt: 3 },
-        totalRatings: { $gt: 2 },
-        university: req.user.role === 'student-admin' ? req.user.university : { $exists: true }
+      averageRating: { $lt: 3 },  // Users with rating less than 3
+      totalRatings: { $gt: 2 }    // With at least 3 ratings
     })
     .populate('university', 'name')
-    .select('displayName email photo averageRating totalRatings university');
+    .sort('averageRating')
+    .limit(10);
 
-    res.status(200).json({
-        success: true,
-        count: users.length,
-        data: users
+    res.json({
+      success: true,
+      data: users
     });
-});
+  } catch (error) {
+    console.error('Error getting poor rated users:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error getting poor rated users'
+    });
+  }
+};
 
 // Suspend user
 export const suspendUser = asyncHandler(async (req, res, next) => {
@@ -254,3 +275,56 @@ export const removeStudentAdmin = asyncHandler(async (req, res, next) => {
         data: user
     });
 });
+
+// Moderate listing
+export const moderateListing = async (req, res) => {
+  try {
+    const { action, reason } = req.body;
+    const { id } = req.params;
+
+    if (!['approve', 'reject'].includes(action)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid action. Must be either approve or reject'
+      });
+    }
+
+    const listing = await Listing.findById(id);
+    if (!listing) {
+      return res.status(404).json({
+        success: false,
+        message: 'Listing not found'
+      });
+    }
+
+    // Check if student admin has permission for this university
+    if (req.user.role === 'StudentAdmin' && listing.university.toString() !== req.user.university.toString()) {
+      return res.status(403).json({
+        success: false,
+        message: 'Not authorized to moderate listings from other universities'
+      });
+    }
+
+    listing.status = action === 'approve' ? 'active' : 'rejected';
+    if (action === 'reject' && reason) {
+      listing.rejectionReason = reason;
+    }
+
+    listing.moderatedBy = req.user._id;
+    listing.moderatedAt = Date.now();
+
+    await listing.save();
+
+    res.json({
+      success: true,
+      message: `Listing ${action}d successfully`,
+      data: listing
+    });
+  } catch (error) {
+    console.error('Error moderating listing:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error moderating listing'
+    });
+  }
+};

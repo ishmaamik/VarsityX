@@ -1,117 +1,132 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
-import { CheckCircle, XCircle, Loader } from 'lucide-react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { CheckCircle, XCircle, AlertTriangle, ArrowLeft } from 'lucide-react';
 import axios from 'axios';
+import { toast } from 'react-hot-toast';
 
 const PaymentStatus = () => {
-  const [searchParams] = useSearchParams();
-  const navigate = useNavigate();
-  const location = useLocation();
   const [status, setStatus] = useState('loading');
-  const [message, setMessage] = useState('');
+  const [transaction, setTransaction] = useState(null);
+  const location = useLocation();
+  const navigate = useNavigate();
+  const params = new URLSearchParams(location.search);
+  const transactionId = params.get('transactionId');
 
   useEffect(() => {
-    console.log('Current URL:', window.location.href);
-    console.log('Search params:', Object.fromEntries(searchParams.entries()));
-    
-    const verifyPayment = async () => {
+    const fetchTransactionStatus = async () => {
       try {
-        // Get payment status from URL parameters
-        const paymentStatus = searchParams.get('status');
-        const transactionId = searchParams.get('transactionId');
-        console.log('Payment status:', paymentStatus);
-        console.log('Transaction ID:', transactionId);
-        
-        if (paymentStatus === 'success') {
-          setStatus('success');
-          setMessage('Payment successful! Your order has been placed.');
-          // Clear cart after successful payment
-          try {
-            const token = localStorage.getItem('token');
-            if (token) {
-              await axios.delete('http://localhost:5000/cart', {
-                headers: { Authorization: `Bearer ${token}` }
-              });
-              console.log('Cart cleared successfully');
-            }
-          } catch (error) {
-            console.error('Error clearing cart:', error);
-          }
-          setTimeout(() => navigate('/marketplace'), 3000);
-        } else if (paymentStatus === 'failed') {
-          setStatus('error');
-          setMessage('Payment failed. Please try again.');
-          setTimeout(() => navigate('/marketplace/cart'), 3000);
-        } else if (paymentStatus === 'cancelled') {
-          setStatus('error');
-          setMessage('Payment was cancelled.');
-          setTimeout(() => navigate('/marketplace/cart'), 3000);
-        } else if (paymentStatus === 'error') {
-          setStatus('error');
-          setMessage('An error occurred during payment.');
-          setTimeout(() => navigate('/marketplace/cart'), 3000);
-        } else {
-          console.log('Invalid or missing payment status:', paymentStatus);
-          setStatus('error');
-          setMessage('Invalid payment status.');
-          setTimeout(() => navigate('/marketplace/cart'), 3000);
-        }
+        const token = localStorage.getItem('token');
+        const response = await axios.get(
+          `http://localhost:5000/api/payment/status/${transactionId}`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        setTransaction(response.data.transaction);
+        setStatus(response.data.transaction.status.toLowerCase());
       } catch (error) {
-        console.error('Payment verification error:', error);
+        console.error('Error fetching transaction status:', error);
+        toast.error('Failed to fetch transaction status');
         setStatus('error');
-        setMessage(error.response?.data?.message || 'An error occurred while verifying payment.');
-        setTimeout(() => navigate('/marketplace/cart'), 3000);
       }
     };
 
-    verifyPayment();
-  }, [navigate, searchParams, location]);
+    if (transactionId) {
+      fetchTransactionStatus();
+    }
+  }, [transactionId]);
+
+  const getStatusContent = () => {
+    switch (status) {
+      case 'completed':
+        return {
+          icon: <CheckCircle className="w-16 h-16 text-green-500" />,
+          title: 'Payment Successful',
+          message: 'Your payment has been processed successfully.',
+          buttonText: 'View Orders'
+        };
+      case 'failed':
+        return {
+          icon: <XCircle className="w-16 h-16 text-red-500" />,
+          title: 'Payment Failed',
+          message: 'Your payment could not be processed. Please try again.',
+          buttonText: 'Try Again'
+        };
+      case 'cancelled':
+        return {
+          icon: <AlertTriangle className="w-16 h-16 text-yellow-500" />,
+          title: 'Payment Cancelled',
+          message: 'You have cancelled the payment process.',
+          buttonText: 'Return to Cart'
+        };
+      case 'error':
+        return {
+          icon: <AlertTriangle className="w-16 h-16 text-red-500" />,
+          title: 'Error',
+          message: 'An error occurred while processing your payment.',
+          buttonText: 'Return to Cart'
+        };
+      default:
+        return {
+          icon: <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />,
+          title: 'Processing',
+          message: 'Please wait while we process your payment...',
+          buttonText: ''
+        };
+    }
+  };
+
+  const handleButtonClick = () => {
+    switch (status) {
+      case 'completed':
+        navigate('/orders');
+        break;
+      case 'failed':
+      case 'cancelled':
+      case 'error':
+        navigate('/cart');
+        break;
+      default:
+        break;
+    }
+  };
+
+  const content = getStatusContent();
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
-      <div className="max-w-md w-full mx-auto p-8">
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 text-center">
-          {status === 'loading' && (
-            <>
-              <Loader className="mx-auto h-16 w-16 text-blue-500 animate-spin" />
-              <h2 className="mt-4 text-xl font-semibold text-gray-900 dark:text-white">
-                Processing Payment
-              </h2>
-              <p className="mt-2 text-gray-600 dark:text-gray-400">
-                Please wait while we verify your payment...
-              </p>
-            </>
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md mx-auto bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden">
+        <div className="p-6 text-center">
+          <div className="flex justify-center mb-6">{content.icon}</div>
+          <h2 className="text-2xl font-bold mb-2">{content.title}</h2>
+          <p className="text-gray-600 dark:text-gray-400 mb-6">{content.message}</p>
+
+          {transaction && status === 'completed' && (
+            <div className="mb-6 text-left bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+              <h3 className="font-semibold mb-2">Transaction Details</h3>
+              <div className="space-y-2 text-sm">
+                <p>Transaction ID: {transaction._id}</p>
+                <p>Amount: ৳{transaction.totalAmount}</p>
+                <p>Date: {new Date(transaction.createdAt).toLocaleString()}</p>
+                <p>Payment Method: {transaction.paymentDetails?.card_type || 'N/A'}</p>
+              </div>
+            </div>
           )}
 
-          {status === 'success' && (
-            <>
-              <CheckCircle className="mx-auto h-16 w-16 text-green-500" />
-              <h2 className="mt-4 text-xl font-semibold text-gray-900 dark:text-white">
-                Payment Successful!
-              </h2>
-              <p className="mt-2 text-gray-600 dark:text-gray-400">
-                {message}
-              </p>
-              <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-                Redirecting to marketplace...
-              </p>
-            </>
+          {content.buttonText && (
+            <button
+              onClick={handleButtonClick}
+              className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              {content.buttonText}
+            </button>
           )}
 
-          {status === 'error' && (
-            <>
-              <XCircle className="mx-auto h-16 w-16 text-red-500" />
-              <h2 className="mt-4 text-xl font-semibold text-gray-900 dark:text-white">
-                Payment Failed
-              </h2>
-              <p className="mt-2 text-gray-600 dark:text-gray-400">
-                {message}
-              </p>
-              <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-                Redirecting back to cart...
-              </p>
-            </>
-          )}
+          <button
+            onClick={() => navigate('/marketplace')}
+            className="mt-4 flex items-center justify-center w-full text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to Marketplace
+          </button>
         </div>
       </div>
     </div>

@@ -279,3 +279,30 @@ export const updateUniversity = async (req, res) => {
     });
   }
 };
+
+// @desc    Get users by university
+// @route   GET /api/users/university/:university
+// @access  Private (Admin/StudentAdmin only)
+export const getUsersByUniversity = async (req, res) => {
+  try {
+    const { university } = req.params;
+    
+    const users = await User.find({ 
+      university,
+      role: 'User' // Only get regular users, not admins
+    })
+    .select('displayName email university')
+    .sort('displayName');
+
+    res.json({
+      success: true,
+      users
+    });
+  } catch (error) {
+    console.error('Error fetching university users:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching university users'
+    });
+  }
+};

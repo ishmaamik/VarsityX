@@ -1,6 +1,10 @@
 import mongoose from 'mongoose';
 
 const UniversitySchema = new mongoose.Schema({
+    _id: {
+        type: String,
+        required: true
+    },
     name: {
         type: String,
         required: [true, 'Please add a university name'],

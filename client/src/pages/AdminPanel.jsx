@@ -24,6 +24,7 @@ import { useNavigate } from "react-router-dom";
 import AdminSidebar from "./AdminSidebar";
 import axios from "axios";
 import StudentAdminManagement from './StudentAdminManagement';
+import PendingListings from '../components/admin/PendingListings';
 
 const AdminPanel = () => {
     const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -335,6 +336,12 @@ const AdminPanel = () => {
                                 </div>
                             </div>
                         </>
+                    )}
+
+                    {activeMenu === "listings-pending" && (
+                        <div className="p-6">
+                            <PendingListings />
+                        </div>
                     )}
 
                     {activeMenu === "trips-all" && (

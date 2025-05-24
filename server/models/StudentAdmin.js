@@ -7,9 +7,9 @@ const studentAdminSchema = new mongoose.Schema({
     required: true
   },
   university: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'University',
-    required: true
+    type: String,
+    required: true,
+    enum: ['IUT', 'BUET', 'DU', 'BRAC', 'NSU']
   },
   status: {
     type: String,
@@ -28,7 +28,7 @@ const studentAdminSchema = new mongoose.Schema({
 });
 
 // Ensure one user can only be admin for one university
-studentAdminSchema.index({ user: 1, university: 1 }, { unique: true });
+studentAdminSchema.index({ user: 1 }, { unique: true });
 
 const StudentAdmin = mongoose.model('StudentAdmin', studentAdminSchema);
 

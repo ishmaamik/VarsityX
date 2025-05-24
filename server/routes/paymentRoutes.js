@@ -4,12 +4,28 @@ import axios from 'axios';
 import { v4 as uuidv4 } from 'uuid';
 import Transaction from '../models/Transaction.js';
 import { authenticate } from '../middleware/authMiddleware.js';
+import {
+  initPayment,
+  paymentSuccess,
+  paymentFailure,
+  paymentCancel,
+  ipn
+} from '../controllers/paymentController.js';
 
 dotenv.config();
 const router = express.Router();
 
 // Add body-parser middleware for URL-encoded bodies (important for SSLCommerz POST data)
 router.use(express.urlencoded({ extended: true }));
+
+// Protected route - requires authentication
+router.post('/init', authenticate, initPayment);
+
+// SSLCommerz callback routes - no authentication needed
+router.post('/success', paymentSuccess);
+router.post('/fail', paymentFailure);
+router.post('/cancel', paymentCancel);
+router.post('/ipn', ipn);
 
 // Initialize SSLCommerz payment
 router.post('/ssl', authenticate, async (req, res) => {

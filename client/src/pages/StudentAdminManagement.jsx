@@ -4,15 +4,11 @@ import { Shield, User, Star, AlertTriangle } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 
 const StudentAdminManagement = () => {
-  const [universities, setUniversities] = useState([]);
+  const universities = ['IUT', 'BUET', 'DU', 'BRAC', 'NSU'];
   const [selectedUniversity, setSelectedUniversity] = useState('');
   const [users, setUsers] = useState([]);
   const [studentAdmins, setStudentAdmins] = useState([]);
   const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    fetchUniversities();
-  }, []);
 
   useEffect(() => {
     if (selectedUniversity) {
@@ -21,20 +17,14 @@ const StudentAdminManagement = () => {
     }
   }, [selectedUniversity]);
 
-  const fetchUniversities = async () => {
-    try {
-      const response = await axios.get('http://localhost:5000/api/universities');
-      setUniversities(response.data);
-    } catch (error) {
-      console.error('Error fetching universities:', error);
-      toast.error('Failed to fetch universities');
-    }
-  };
-
   const fetchUniversityUsers = async () => {
     try {
-      const response = await axios.get(`http://localhost:5000/api/users/university/${selectedUniversity}`);
-      setUsers(response.data.users);
+      const token = localStorage.getItem('token');
+      const response = await axios.get(
+        `http://localhost:5000/api/users/university/${selectedUniversity}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setUsers(response.data.users || []);
     } catch (error) {
       console.error('Error fetching university users:', error);
       toast.error('Failed to fetch university users');
@@ -63,7 +53,7 @@ const StudentAdminManagement = () => {
         'http://localhost:5000/api/student-admin/assign',
         {
           userId,
-          universityId: selectedUniversity
+          university: selectedUniversity
         },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -89,9 +79,9 @@ const StudentAdminManagement = () => {
           className="w-full md:w-64 px-4 py-2 border rounded-lg bg-white dark:bg-gray-700 dark:text-white"
         >
           <option value="">Select University</option>
-          {universities?.map((university) => (
-            <option key={university._id} value={university._id}>
-              {university.name}
+          {universities.map((university) => (
+            <option key={university} value={university}>
+              {university}
             </option>
           ))}
         </select>

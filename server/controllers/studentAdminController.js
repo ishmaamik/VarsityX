@@ -1,13 +1,35 @@
 import StudentAdmin from '../models/StudentAdmin.js';
 import User from '../models/User.js';
 import Listing from '../models/Listing.js';
+import ErrorResponse from '../utils/errorResponse.js';
 
-// Assign student admin role
+// Get student admins for a university
+export const getUniversityStudentAdmins = async (req, res) => {
+  try {
+    const { university } = req.params;
+    
+    const studentAdmins = await StudentAdmin.find({ university })
+      .populate('user', 'displayName email');
+
+    res.json({
+      success: true,
+      data: studentAdmins
+    });
+  } catch (error) {
+    console.error('Error fetching student admins:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching student admins'
+    });
+  }
+};
+
+// Assign student admin
 export const assignStudentAdmin = async (req, res) => {
   try {
-    const { userId, universityId } = req.body;
+    const { userId, university } = req.body;
 
-    // Check if user exists and is not already an admin
+    // Check if user exists
     const user = await User.findById(userId);
     if (!user) {
       return res.status(404).json({
@@ -16,29 +38,49 @@ export const assignStudentAdmin = async (req, res) => {
       });
     }
 
-    // Create student admin
-    const studentAdmin = new StudentAdmin({
-      user: userId,
-      university: universityId
-    });
+    // Check if user belongs to the university
+    if (user.university !== university) {
+      return res.status(400).json({
+        success: false,
+        message: 'User does not belong to this university'
+      });
+    }
 
-    await studentAdmin.save();
+    // Check if already a student admin
+    const existingAdmin = await StudentAdmin.findOne({ user: userId });
+    if (existingAdmin) {
+      return res.status(400).json({
+        success: false,
+        message: 'User is already a student admin'
+      });
+    }
+
+    // Create student admin
+    const studentAdmin = await StudentAdmin.create({
+      user: userId,
+      university,
+      moderationStats: {
+        listingsApproved: 0,
+        listingsRejected: 0,
+        usersSuspended: 0
+      }
+    });
 
     // Update user role
     user.role = 'StudentAdmin';
     await user.save();
 
+    await studentAdmin.populate('user', 'displayName email');
+
     res.status(201).json({
       success: true,
-      message: 'Student admin assigned successfully',
       data: studentAdmin
     });
-
   } catch (error) {
     console.error('Error assigning student admin:', error);
     res.status(500).json({
       success: false,
-      message: error.message || 'Error assigning student admin'
+      message: 'Error assigning student admin'
     });
   }
 };

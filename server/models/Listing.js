@@ -54,9 +54,15 @@ const listingSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['active', 'sold', 'deleted'],
-    default: 'active'
+    enum: ['pending', 'active', 'rejected', 'sold', 'deleted'],
+    default: 'pending'
   },
+  moderatedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  },
+  moderatedAt: Date,
+  rejectionReason: String,
   views: {
     type: Number,
     default: 0

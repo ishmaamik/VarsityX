@@ -1,14 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Trash2, ArrowLeft, ChevronDown, ShoppingCart, Moon, Sun, Loader } from 'lucide-react';
+import { Trash2, ArrowLeft, ChevronDown, ShoppingCart, Moon, Sun, Loader, AlertCircle } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 import axios from 'axios';
+import { toast } from 'react-hot-toast';
 
 const Cart = () => {
   const navigate = useNavigate();
   const { darkMode, toggleDarkMode } = useTheme();
   const [cartItems, setCartItems] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [processing, setProcessing] = useState(false);
   const [error, setError] = useState(null);
 
   // Load cart items
@@ -18,16 +20,17 @@ const Cart = () => {
         setLoading(true);
         const token = localStorage.getItem('token');
         if (token) {
-          const response = await axios.get('http://localhost:5000/cart', {
+          const response = await axios.get('http://localhost:5000/api/cart', {
             headers: { Authorization: `Bearer ${token}` }
           });
-          setCartItems(response.data.cart);
+          setCartItems(response.data.items || []);
         } else {
           const savedCart = localStorage.getItem('cartItems');
           if (savedCart) setCartItems(JSON.parse(savedCart));
         }
       } catch (err) {
         setError(err.response?.data?.message || 'Failed to load cart');
+        toast.error('Failed to fetch cart items');
       } finally {
         setLoading(false);
       }
@@ -68,9 +71,10 @@ const Cart = () => {
     try {
       const token = localStorage.getItem('token');
       if (token) {
-        await axios.delete(`http://localhost:5000/cart/${itemId}`, {
+        await axios.delete(`http://localhost:5000/api/cart/${itemId}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
+        toast.success('Item removed from cart');
         setCartItems(prev => prev.filter(item => item._id !== itemId));
       } else {
         const updatedCart = cartItems.filter(item => item._id !== itemId);
@@ -79,6 +83,7 @@ const Cart = () => {
       }
     } catch (err) {
       console.error('Error removing item:', err);
+      toast.error('Failed to remove item from cart');
     }
   };
 
@@ -114,39 +119,44 @@ const Cart = () => {
 
   const handleCheckout = async () => {
     try {
+      setProcessing(true);
       const token = localStorage.getItem('token');
-      if (!token) {
-        navigate('/login');
-        return;
-      }
 
+      // Calculate total amount
+      const totalAmount = cartItems.reduce((total, item) => total + item.price, 0);
+
+      // Initialize payment
       const response = await axios.post(
-        'http://localhost:5000/api/payment/ssl',
+        'http://localhost:5000/api/payment/init',
         {
-          amount: calculateTotal().toFixed(2),
+          items: cartItems.map(item => ({
+            listing: item._id,
+            price: item.price,
+            quantity: 1
+          })),
+          totalAmount
         },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
+        { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      if (response.data?.GatewayPageURL) {
-        window.location.href = response.data.GatewayPageURL;
+      // Redirect to SSLCommerz payment gateway
+      if (response.data.success && response.data.url) {
+        window.location.href = response.data.url;
       } else {
-        throw new Error('No gateway URL received');
+        toast.error('Failed to initialize payment');
       }
     } catch (error) {
-      console.error('Payment initialization failed:', error);
-      alert(error.response?.data?.error || 'Payment failed. Please try again.');
+      console.error('Error processing payment:', error);
+      toast.error(error.response?.data?.message || 'Failed to process payment');
+    } finally {
+      setProcessing(false);
     }
   };
 
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-50 dark:bg-gray-900">
-        <Loader className="animate-spin" size={32} />
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
       </div>
     );
   }
@@ -291,10 +301,10 @@ const Cart = () => {
 
                 <button
                   onClick={handleCheckout}
-                  disabled={cartItems.length === 0}
-                  className="w-full py-3 bg-orange-600 text-white rounded-lg font-bold hover:bg-orange-700 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center"
+                  disabled={processing}
+                  className="w-full py-3 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center"
                 >
-                  Proceed to Payment
+                  {processing ? 'Processing...' : 'Proceed to Payment'}
                 </button>
 
                 <div className="mt-4 text-sm text-gray-600 dark:text-gray-400">
@@ -310,6 +320,15 @@ const Cart = () => {
                     </svg>
                     Secure student-to-student transactions
                   </p>
+                </div>
+
+                <div className="mt-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
+                  <div className="flex items-center text-yellow-800 dark:text-yellow-400">
+                    <AlertCircle className="w-5 h-5 mr-2" />
+                    <span className="text-sm">
+                      You will be redirected to SSLCommerz secure payment gateway
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>

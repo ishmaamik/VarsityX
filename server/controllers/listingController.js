@@ -1,5 +1,6 @@
 import Listing from '../models/Listing.js';
 import User from '../models/User.js';
+import StudentAdmin from '../models/StudentAdmin.js';
 
 // Create a new listing
 export const createListing = async (req, res) => {
@@ -327,6 +328,151 @@ export const placeBid = async (req, res) => {
       success: false,
       message: 'Failed to place bid',
       error: err.message
+    });
+  }
+};
+
+// Get pending listings for admin/student-admin
+export const getPendingListings = async (req, res) => {
+  try {
+    let query = { status: 'pending' };
+    
+    // If student admin, only show listings from their university
+    if (req.user.role === 'StudentAdmin') {
+      const studentAdmin = await StudentAdmin.findOne({ user: req.user.userId });
+      if (!studentAdmin) {
+        return res.status(403).json({
+          success: false,
+          message: 'Not authorized as student admin'
+        });
+      }
+      query.university = studentAdmin.university;
+    }
+
+    const listings = await Listing.find(query)
+      .populate('seller', 'displayName email university')
+      .sort('-createdAt');
+
+    res.json({
+      success: true,
+      data: listings
+    });
+  } catch (error) {
+    console.error('Error fetching pending listings:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching pending listings'
+    });
+  }
+};
+
+// Moderate listing (approve/reject)
+export const moderateListing = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { action, reason } = req.body;
+
+    if (!['approve', 'reject'].includes(action)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid action. Must be either approve or reject'
+      });
+    }
+
+    const listing = await Listing.findById(id);
+    if (!listing) {
+      return res.status(404).json({
+        success: false,
+        message: 'Listing not found'
+      });
+    }
+
+    // Check if student admin has permission for this university
+    if (req.user.role === 'StudentAdmin') {
+      const studentAdmin = await StudentAdmin.findOne({ user: req.user.userId });
+      if (!studentAdmin || listing.university !== studentAdmin.university) {
+        return res.status(403).json({
+          success: false,
+          message: 'Not authorized to moderate this listing'
+        });
+      }
+
+      // Update student admin stats
+      if (action === 'approve') {
+        studentAdmin.moderationStats.listingsApproved += 1;
+      } else {
+        studentAdmin.moderationStats.listingsRejected += 1;
+      }
+      await studentAdmin.save();
+    }
+
+    // Update listing
+    listing.status = action === 'approve' ? 'active' : 'rejected';
+    listing.moderatedBy = req.user.userId;
+    listing.moderatedAt = new Date();
+    if (action === 'reject') {
+      listing.rejectionReason = reason;
+    }
+    await listing.save();
+
+    res.json({
+      success: true,
+      message: `Listing ${action}d successfully`
+    });
+  } catch (error) {
+    console.error('Error moderating listing:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error moderating listing'
+    });
+  }
+};
+
+// Get listing stats for admin dashboard
+export const getListingStats = async (req, res) => {
+  try {
+    let query = {};
+    
+    // If student admin, only count listings from their university
+    if (req.user.role === 'StudentAdmin') {
+      const studentAdmin = await StudentAdmin.findOne({ user: req.user.userId });
+      if (!studentAdmin) {
+        return res.status(403).json({
+          success: false,
+          message: 'Not authorized as student admin'
+        });
+      }
+      query.university = studentAdmin.university;
+    }
+
+    const stats = await Listing.aggregate([
+      { $match: query },
+      {
+        $group: {
+          _id: null,
+          total: { $sum: 1 },
+          pending: {
+            $sum: { $cond: [{ $eq: ['$status', 'pending'] }, 1, 0] }
+          },
+          active: {
+            $sum: { $cond: [{ $eq: ['$status', 'active'] }, 1, 0] }
+          },
+          rejected: {
+            $sum: { $cond: [{ $eq: ['$status', 'rejected'] }, 1, 0] }
+          }
+        }
+      }
+    ]);
+
+    res.json({
+      success: true,
+      data: stats[0] || { total: 0, pending: 0, active: 0, rejected: 0 }
+    });
+  } catch (error) {
+    console.error('Error getting listing stats:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error getting listing stats'
     });
   }
 };
