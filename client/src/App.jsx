@@ -1,35 +1,56 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import React from "react";
+import axios from "axios"
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Login, Register } from "./pages/AuthPages";
+import { ThemeProvider } from "./context/ThemeContext";
+import { AnimatePresence } from "framer-motion";
 
-function App() {
-  const [count, setCount] = useState(0)
+
+
+function AppContent() {
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const API_BASE = 'http://localhost:5000';
+  const [user, setUser] = useState(null);
+  const [activeMenu, setActiveMenu] = useState("dashboard");
+  const [subMenuOpen, setSubMenuOpen] = useState({
+      trips: false,
+      users: false,
+      content: false
+  });
+
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    axios
+      .get(`${API_BASE}/user/user-data`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      .then((res) => setUser(res.data))
+      .catch((err) => console.error('Failed to fetch user data:', err));
+  }, []);
 
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+    <AnimatePresence mode="wait">
+      <Routes>
+        
+
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+      </Routes>
+    </AnimatePresence>
+  );
 }
 
-export default App
+function App() {
+  return (
+    <ThemeProvider>
+      <BrowserRouter>
+        <AppContent />
+      </BrowserRouter>
+    </ThemeProvider>
+  );
+}
+
+export default App;
