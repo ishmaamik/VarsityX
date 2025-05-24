@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { 
   Search, Filter, ChevronDown, Book, Laptop, Bike, 
   GraduationCap, MessageSquare, ShoppingCart, Moon, Sun, Loader 
@@ -21,6 +21,25 @@ const categories = [
 const BuyPage = () => {
   const navigate = useNavigate();
   const { darkMode, toggleDarkMode } = useTheme();
+  const [searchParams] = useSearchParams();
+  const paymentStatus = searchParams.get('status');
+  const paymentMessage = searchParams.get('message');
+  
+  // Show payment status message if exists
+  useEffect(() => {
+    if (paymentStatus && paymentMessage) {
+      const message = decodeURIComponent(paymentMessage);
+      if (paymentStatus === 'success') {
+        alert('✅ ' + message);
+      } else if (paymentStatus === 'failed') {
+        alert('❌ ' + message);
+      } else {
+        alert('⚠️ ' + message);
+      }
+      // Clear the URL parameters after showing the message
+      navigate('/marketplace/buy', { replace: true });
+    }
+  }, [paymentStatus, paymentMessage]);
 
   // Filters and search state
   const [searchTerm, setSearchTerm] = useState('');
