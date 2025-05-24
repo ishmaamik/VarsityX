@@ -1,12 +1,20 @@
 import React, { useState, useEffect } from "react";
 import CampusNavigation from "../components/CampusNavigation";
-import { Shield, MapPin, Users, Search, Filter } from "lucide-react";
+import {
+  Shield,
+  MapPin,
+  Users,
+  Search,
+  Filter,
+  Navigation2,
+} from "lucide-react";
 
 const SafeMeetups = () => {
+  // Initial view centered on IUT
   const [viewState, setViewState] = useState({
-    longitude: 90.4043,
-    latitude: 23.8223,
-    zoom: 15,
+    longitude: 90.2673,
+    latitude: 23.9633,
+    zoom: 16,
   });
 
   const [userLocation, setUserLocation] = useState(null);
@@ -17,81 +25,81 @@ const SafeMeetups = () => {
   const [selectedType, setSelectedType] = useState("all");
   const [customStartPoint, setCustomStartPoint] = useState(null);
 
+  // IUT-specific locations
   const [safeMeetupLocations] = useState([
     {
       id: 1,
-      name: "Central Library",
-      type: "library",
-      coordinates: [23.8223, 90.4043],
-      description: "Main library entrance - Well-lit and staffed 24/7",
+      name: "IUT Main Gate",
+      type: "security",
+      coordinates: [23.9632, 90.2673],
+      description: "Main entrance with 24/7 security",
       hours: "Open 24/7",
-      securityFeatures: ["Security Guards", "CCTV", "Help Point"],
+      securityFeatures: ["Security Guards", "CCTV", "Visitor Log"],
       crowdLevel: "High",
     },
     {
       id: 2,
-      name: "Student Center",
+      name: "Academic Building",
       type: "academic",
-      coordinates: [23.8225, 90.4045],
-      description: "Main student hub with cafeteria and study spaces",
+      coordinates: [23.9633, 90.2675],
+      description: "Main academic building with classrooms and labs",
       hours: "7:00 AM - 10:00 PM",
-      securityFeatures: ["Security Desk", "High Traffic Area", "CCTV"],
+      securityFeatures: ["Security Desk", "ID Card Access", "CCTV"],
       crowdLevel: "Very High",
     },
     {
       id: 3,
-      name: "Campus Security Office",
-      type: "security",
-      coordinates: [23.822, 90.404],
-      description: "24/7 security office with emergency services",
-      hours: "Open 24/7",
-      securityFeatures: ["Security Staff", "Emergency Services", "CCTV"],
+      name: "Central Library",
+      type: "library",
+      coordinates: [23.9634, 90.2674],
+      description: "Main library with study areas",
+      hours: "8:00 AM - 11:00 PM",
+      securityFeatures: ["Librarian", "CCTV", "Security Guard"],
       crowdLevel: "Medium",
     },
     {
       id: 4,
-      name: "Main Cafeteria",
+      name: "Cafeteria",
       type: "academic",
-      coordinates: [23.8228, 90.4048],
-      description: "Busy dining area with security presence",
-      hours: "6:00 AM - 11:00 PM",
-      securityFeatures: ["Security Cameras", "High Traffic", "Help Point"],
+      coordinates: [23.9635, 90.2676],
+      description: "Student dining area",
+      hours: "7:00 AM - 9:00 PM",
+      securityFeatures: ["High Traffic Area", "CCTV"],
       crowdLevel: "Very High",
     },
     {
       id: 5,
-      name: "Science Building Lobby",
-      type: "academic",
-      coordinates: [23.8218, 90.4038],
-      description: "Main entrance of Science Building",
-      hours: "7:00 AM - 9:00 PM",
-      securityFeatures: ["Security Desk", "CCTV", "ID Card Access"],
-      crowdLevel: "High",
+      name: "Central Mosque",
+      type: "security",
+      coordinates: [23.9636, 90.2677],
+      description: "Main prayer area",
+      hours: "Open 24/7",
+      securityFeatures: ["Well-lit Area", "Security Guards"],
+      crowdLevel: "Varies",
     },
     {
       id: 6,
-      name: "Sports Complex",
+      name: "Sports Ground",
       type: "security",
-      coordinates: [23.823, 90.405],
-      description: "Indoor sports facility with security staff",
-      hours: "6:00 AM - 10:00 PM",
-      securityFeatures: ["Security Staff", "CCTV", "Emergency Phone"],
+      coordinates: [23.9631, 90.2678],
+      description: "Open sports ground with track",
+      hours: "6:00 AM - 9:00 PM",
+      securityFeatures: ["Open Space", "Lighting", "Security Patrols"],
       crowdLevel: "Medium",
     },
     {
       id: 7,
-      name: "Engineering Library",
-      type: "library",
-      coordinates: [23.8215, 90.4035],
-      description: "Engineering department library with study areas",
-      hours: "8:00 AM - 11:00 PM",
-      securityFeatures: ["Librarian Desk", "CCTV", "Security Guard"],
-      crowdLevel: "Medium",
+      name: "Student Center",
+      type: "academic",
+      coordinates: [23.9637, 90.2676],
+      description: "Student activities and club meeting point",
+      hours: "8:00 AM - 8:00 PM",
+      securityFeatures: ["Security Desk", "CCTV"],
+      crowdLevel: "High",
     },
   ]);
 
   useEffect(() => {
-    // Get user's location if permitted
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
@@ -100,10 +108,12 @@ const SafeMeetups = () => {
             position.coords.longitude,
           ];
           setUserLocation(location);
-          setRouteStart(location); // Set initial route start to user location
+          setRouteStart(location);
         },
         (error) => {
           console.error("Error getting location:", error);
+          // Set IUT main gate as default starting point if location access is denied
+          setRouteStart([23.9632, 90.2673]);
         }
       );
     }
@@ -112,12 +122,6 @@ const SafeMeetups = () => {
   const handleLocationSelect = (location) => {
     setSelectedBuilding(location);
     setRouteEnd(location.coordinates);
-    setViewState({
-      ...viewState,
-      latitude: location.coordinates[0],
-      longitude: location.coordinates[1],
-      zoom: 17,
-    });
   };
 
   const handleStartPointSelect = (point) => {
@@ -125,79 +129,125 @@ const SafeMeetups = () => {
     setRouteStart(point);
   };
 
-  const filteredLocations = safeMeetupLocations
-    .filter(
-      (location) =>
-        location.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        location.description.toLowerCase().includes(searchTerm.toLowerCase())
-    )
-    .filter((location) =>
-      selectedType === "all" ? true : location.type === selectedType
-    );
+  const filteredLocations = safeMeetupLocations.filter(
+    (location) =>
+      (location.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        location.description
+          .toLowerCase()
+          .includes(searchTerm.toLowerCase())) &&
+      (selectedType === "all" || location.type === selectedType)
+  );
 
   return (
-    <div className="flex flex-col h-screen">
-      <div className="bg-white dark:bg-gray-800 p-4 shadow-md">
-        <h1 className="text-2xl font-bold text-gray-800 dark:text-white flex items-center gap-2">
-          <Shield className="w-6 h-6 text-green-500" />
-          Safe Meetup Locations
-        </h1>
-        <p className="text-gray-600 dark:text-gray-300 mt-2">
-          Choose from verified safe meeting points on campus for your
-          marketplace exchanges
-        </p>
+    <div className="flex h-screen">
+      {/* Left side - Large Map */}
+      <div className="w-2/3 h-full">
+        <CampusNavigation
+          buildings={safeMeetupLocations}
+          selectedBuilding={selectedBuilding}
+          userLocation={userLocation}
+          onBuildingSelect={handleLocationSelect}
+          viewState={viewState}
+          onViewStateChange={setViewState}
+          routeStart={routeStart}
+          routeEnd={routeEnd}
+          onStartPointSelect={handleStartPointSelect}
+        />
       </div>
 
-      <div className="flex flex-1 gap-4 p-4">
-        <div className="w-1/3 bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 flex flex-col">
-          <div className="mb-4 space-y-3">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-              <input
-                type="text"
-                placeholder="Search locations..."
-                className="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
-            <div className="flex items-center gap-2">
-              <Filter className="text-gray-400 w-5 h-5" />
-              <select
-                className="flex-1 p-2 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-                value={selectedType}
-                onChange={(e) => setSelectedType(e.target.value)}
-              >
-                <option value="all">All Types</option>
-                <option value="library">Libraries</option>
-                <option value="academic">Academic Buildings</option>
-                <option value="security">Security Points</option>
-              </select>
-            </div>
-          </div>
+      {/* Right side - Controls and Info */}
+      <div className="w-1/3 h-full overflow-y-auto bg-gray-50 dark:bg-gray-800 p-4 space-y-4">
+        {/* Header */}
+        <div className="bg-white dark:bg-gray-700 rounded-lg p-4 shadow">
+          <h1 className="text-xl font-bold flex items-center gap-2 text-gray-800 dark:text-white">
+            <Shield className="w-6 h-6 text-green-500" />
+            Safe Meetup Locations
+          </h1>
+        </div>
 
-          <div className="flex-1 overflow-y-auto space-y-3">
+        {/* Search and Filter */}
+        <div className="bg-white dark:bg-gray-700 rounded-lg p-4 shadow space-y-3">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search locations..."
+              className="w-full pl-10 pr-4 py-2 border rounded-lg dark:bg-gray-600 dark:border-gray-500 dark:text-white"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+          <select
+            className="w-full p-2 border rounded-lg dark:bg-gray-600 dark:border-gray-500 dark:text-white"
+            value={selectedType}
+            onChange={(e) => setSelectedType(e.target.value)}
+          >
+            <option value="all">All Types</option>
+            <option value="academic">Academic</option>
+            <option value="library">Library</option>
+            <option value="security">Security</option>
+          </select>
+        </div>
+
+        {/* Starting Point Selection */}
+        <div className="bg-white dark:bg-gray-700 rounded-lg p-4 shadow">
+          <h2 className="font-semibold mb-3 flex items-center gap-2 text-gray-800 dark:text-white">
+            <Navigation2 className="w-5 h-5 text-blue-500" />
+            Select Starting Point
+          </h2>
+          <select
+            className="w-full p-2 border rounded-lg dark:bg-gray-600 dark:border-gray-500 dark:text-white"
+            onChange={(e) => {
+              if (e.target.value === "current") {
+                handleStartPointSelect(userLocation);
+              } else {
+                const location = safeMeetupLocations.find(
+                  (loc) => loc.id === parseInt(e.target.value)
+                );
+                if (location) {
+                  handleStartPointSelect(location.coordinates);
+                }
+              }
+            }}
+          >
+            <option value="">Choose starting point...</option>
+            <option value="current">Current Location</option>
+            {safeMeetupLocations.map((location) => (
+              <option key={location.id} value={location.id}>
+                {location.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Location List */}
+        <div className="bg-white dark:bg-gray-700 rounded-lg p-4 shadow">
+          <h2 className="font-semibold mb-3 flex items-center gap-2 text-gray-800 dark:text-white">
+            <MapPin className="w-5 h-5 text-red-500" />
+            Available Destinations
+          </h2>
+          <div className="space-y-3">
             {filteredLocations.map((location) => (
               <div
                 key={location.id}
-                className={`p-4 border rounded-lg hover:border-blue-500 cursor-pointer transition-all ${
-                  selectedBuilding?.id === location.id
-                    ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
-                    : ""
-                }`}
                 onClick={() => handleLocationSelect(location)}
+                className={`p-3 rounded-lg cursor-pointer transition-all ${
+                  selectedBuilding?.id === location.id
+                    ? "bg-blue-50 dark:bg-blue-900/30 border-blue-500"
+                    : "hover:bg-gray-50 dark:hover:bg-gray-600"
+                }`}
               >
-                <div className="flex items-start justify-between">
-                  <h3 className="font-semibold text-gray-800 dark:text-white">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-medium text-gray-800 dark:text-white">
                     {location.name}
                   </h3>
                   <span
                     className={`text-xs px-2 py-1 rounded-full ${
                       location.crowdLevel === "Very High"
-                        ? "bg-red-100 text-red-800"
+                        ? "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300"
                         : location.crowdLevel === "High"
-                        ? "bg-orange-100 text-orange-800"
-                        : "bg-green-100 text-green-800"
+                        ? "bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300"
+                        : "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300"
                     }`}
                   >
                     {location.crowdLevel}
@@ -209,11 +259,11 @@ const SafeMeetups = () => {
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                   {location.hours}
                 </p>
-                <div className="mt-2 flex flex-wrap gap-2">
+                <div className="mt-2 flex flex-wrap gap-1">
                   {location.securityFeatures.map((feature, index) => (
                     <span
                       key={index}
-                      className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full"
+                      className="text-xs bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-300 px-2 py-1 rounded-full"
                     >
                       {feature}
                     </span>
@@ -223,35 +273,6 @@ const SafeMeetups = () => {
             ))}
           </div>
         </div>
-
-        <div className="flex-1 bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
-          <CampusNavigation
-            buildings={safeMeetupLocations}
-            selectedBuilding={selectedBuilding}
-            userLocation={userLocation}
-            onBuildingSelect={handleLocationSelect}
-            viewState={viewState}
-            onViewStateChange={setViewState}
-            routeStart={routeStart}
-            routeEnd={routeEnd}
-            onStartPointSelect={handleStartPointSelect}
-          />
-        </div>
-      </div>
-
-      <div className="bg-blue-50 dark:bg-gray-900 p-4">
-        <div className="flex items-center gap-2 text-blue-800 dark:text-blue-300">
-          <Users className="w-5 h-5" />
-          <h3 className="font-semibold">Safety Tips</h3>
-        </div>
-        <ul className="mt-2 text-sm text-blue-700 dark:text-blue-400 list-disc list-inside">
-          <li>
-            Always meet in well-lit, public locations during daytime hours
-          </li>
-          <li>Bring a friend or let someone know about your meetup plans</li>
-          <li>Stay near security cameras and emergency help points</li>
-          <li>Trust your instincts - if something feels off, don't proceed</li>
-        </ul>
       </div>
     </div>
   );

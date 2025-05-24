@@ -23,7 +23,6 @@ const CampusNavigation = ({
   onStartPointSelect,
 }) => {
   const [mapError, setMapError] = useState(null);
-  const [customStartPoint, setCustomStartPoint] = useState(null);
   const [selectedMapStyle, setSelectedMapStyle] = useState(
     "mapbox://styles/mapbox/streets-v12"
   );
@@ -47,7 +46,6 @@ const CampusNavigation = ({
   const handleMapClick = (event) => {
     if (event.originalEvent.shiftKey) {
       const [longitude, latitude] = event.lngLat.toArray();
-      setCustomStartPoint([latitude, longitude]);
       onStartPointSelect([latitude, longitude]);
     }
   };
@@ -61,7 +59,7 @@ const CampusNavigation = ({
   }
 
   return (
-    <div className="relative h-full">
+    <div className="relative aspect-square w-full h-full">
       <ReactMapGL
         {...viewState}
         onMove={(evt) => onViewStateChange(evt.viewState)}
@@ -102,16 +100,14 @@ const CampusNavigation = ({
           <MapboxDirections start={routeStart} end={routeEnd} />
         )}
 
-        {/* Current Location or Custom Start Point */}
-        {(userLocation || customStartPoint) && (
+        {routeStart && (
           <Marker
-            longitude={(customStartPoint || userLocation)[1]}
-            latitude={(customStartPoint || userLocation)[0]}
+            longitude={routeStart[1]}
+            latitude={routeStart[0]}
             anchor="center"
             draggable
             onDragEnd={(e) => {
               const [longitude, latitude] = e.lngLat.toArray();
-              setCustomStartPoint([latitude, longitude]);
               onStartPointSelect([latitude, longitude]);
             }}
           >
@@ -128,7 +124,6 @@ const CampusNavigation = ({
           </Marker>
         )}
 
-        {/* Building Markers */}
         {buildings?.map((building) => (
           <Marker
             key={building.id}
@@ -158,7 +153,6 @@ const CampusNavigation = ({
           </Marker>
         ))}
 
-        {/* Selected Building Popup */}
         {selectedBuilding && (
           <Popup
             longitude={selectedBuilding.coordinates[1]}
