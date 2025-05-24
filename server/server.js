@@ -10,7 +10,6 @@ import marketplaceRoutes from './routes/marketplaceRoutes.js';
 import cartRoutes from './routes/cartRoutes.js';
 import orderRoutes from './routes/orderRoutes.js';
 import reviewRoutes from './routes/reviewRoutes.js';
-import upload from "./config/upload.js"
 import uploadRouter from './routes/uploadRoutes.js';
 import './config/passport.js';  // Passport configuration for Google OAuth
 import priceAdvisorRoutes from "./routes/priceAdvisorRoutes.js";

@@ -3,7 +3,7 @@ import { GridFsStorage } from 'multer-gridfs-storage';
 import { v4 as uuidv4 } from 'uuid';
 import path from 'path';
 
-export function createUpload(mongoUri) {
+const createUpload = (mongoUri) => {
   if (!mongoUri) throw new Error('Mongo URI is required');
 
   const storage = new GridFsStorage({
@@ -41,4 +41,6 @@ export function createUpload(mongoUri) {
     fileFilter,
     limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
   });
-}
+};
+
+export default createUpload;
