@@ -1,13 +1,16 @@
 import express from 'express';
-import { uploadFile } from '../controllers/uploadController.js';
+import upload from '../config/upload.js';
 
-const createUploadRouter = (upload) => {
-  const router = express.Router();
+const uploadRouter = express.Router();
 
-  // Handle single file upload with field name 'file'
-  router.post('/', upload.single('file'), uploadFile);
+uploadRouter.post('/', upload.single('image'), (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ message: 'No file uploaded' });
+  }
+  // Return uploaded file info (URL, filename etc.)
+  // You might want to return the URL where the file can be accessed
+  const imageUrl = `/uploads/${req.file.filename}`;
+  res.json({ imageUrl });
+});
 
-  return router;
-};
-
-export default createUploadRouter;
+export default uploadRouter;
