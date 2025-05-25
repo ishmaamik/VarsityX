@@ -4,8 +4,7 @@ import {
   getListings, 
   getListing, 
   updateListing, 
-  deleteListing,
-  placeBid
+  deleteListing
 } from '../controllers/listingController.js';
 import { authorizeRole } from '../middleware/roleMiddleware.js';
 import { authenticate } from '../middleware/authMiddleware.js';
@@ -20,6 +19,5 @@ router.get('/:id', getListing);
 router.post('/', authorizeRole(['User', 'Admin']), createListing);
 router.put('/:id', authorizeRole(['User', 'Admin']), updateListing);
 router.delete('/:id', authorizeRole(['User', 'Admin']), deleteListing);
-router.post('/:id/bid', authorizeRole(['User']), placeBid);
 
 export default router;

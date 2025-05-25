@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import User from '../models/User.js';
 import Conversation from '../models/Conversation.js';
+import University from '../models/University.js';
 
 // Register with JWT
 export const register = async (req, res) => {
@@ -276,6 +277,35 @@ export const updateUniversity = async (req, res) => {
       success: false,
       message: 'Failed to update university',
       error: err.message
+    });
+  }
+};
+
+// @desc    Get users by university
+// @route   GET /api/users/university/:university
+// @access  Private (Admin/StudentAdmin only)
+export const getUsersByUniversity = async (req, res) => {
+  try {
+    const { university } = req.params;
+    
+    // Find users with that university ID (since university names are used as IDs)
+    const users = await User.find({ 
+      university: university, // University names are used as IDs
+      role: 'User' // Only get regular users, not admins
+    })
+    .populate('university', 'name')
+    .select('displayName email university')
+    .sort('displayName');
+
+    res.json({
+      success: true,
+      users
+    });
+  } catch (error) {
+    console.error('Error fetching university users:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching university users'
     });
   }
 };

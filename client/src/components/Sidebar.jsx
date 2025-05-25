@@ -120,6 +120,11 @@ const Sidebar = ({ open, setOpen }) => {
       path: "/notifications",
     },
     { title: "Profile", icon: <User size={20} />, path: "/profile" },
+    { 
+      title: "Student Profile", 
+      icon: <GraduationCap size={20} />, 
+      path: "/student-profile" 
+    },
     {
       title: "Text to Image",
       icon: <Image size={20} />,

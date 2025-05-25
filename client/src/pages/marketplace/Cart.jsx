@@ -1,14 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Trash2, ArrowLeft, ChevronDown, ShoppingCart, Moon, Sun, Loader } from 'lucide-react';
+import { Trash2, ArrowLeft, ChevronDown, ShoppingCart, Moon, Sun, Loader, AlertCircle } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 import axios from 'axios';
+import { toast } from 'react-hot-toast';
+
+const API_BASE = 'http://localhost:5000';
 
 const Cart = () => {
   const navigate = useNavigate();
   const { darkMode, toggleDarkMode } = useTheme();
   const [cartItems, setCartItems] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [processing, setProcessing] = useState(false);
   const [error, setError] = useState(null);
 
   // Load cart items
@@ -17,17 +21,29 @@ const Cart = () => {
       try {
         setLoading(true);
         const token = localStorage.getItem('token');
-        if (token) {
-          const response = await axios.get('http://localhost:5000/cart', {
-            headers: { Authorization: `Bearer ${token}` }
-          });
-          setCartItems(response.data.cart);
-        } else {
+        if (!token) {
           const savedCart = localStorage.getItem('cartItems');
           if (savedCart) setCartItems(JSON.parse(savedCart));
+          setLoading(false);
+          return;
+        }
+
+        const response = await axios.get(`${API_BASE}/cart`, {
+          headers: { 
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (response.data.success) {
+          setCartItems(response.data.cart || []);
+        } else {
+          throw new Error(response.data.message || 'Failed to fetch cart');
         }
       } catch (err) {
-        setError(err.response?.data?.message || 'Failed to load cart');
+        console.error('Error fetching cart:', err);
+        setError(err.response?.data?.message || err.message || 'Failed to load cart');
+        toast.error('Failed to fetch cart items');
       } finally {
         setLoading(false);
       }
@@ -41,25 +57,34 @@ const Cart = () => {
     
     try {
       const token = localStorage.getItem('token');
-      if (token) {
-        await axios.put(`http://localhost:5000/cart/${itemId}`, 
-          { quantity: newQuantity },
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-        setCartItems(prev => 
-          prev.map(item => 
-            item._id === itemId ? { ...item, quantity: newQuantity } : item
-          )
-        );
-      } else {
+      if (!token) {
         const updatedCart = cartItems.map(item => 
           item._id === itemId ? { ...item, quantity: newQuantity } : item
         );
         setCartItems(updatedCart);
         localStorage.setItem('cartItems', JSON.stringify(updatedCart));
+        return;
+      }
+
+      const response = await axios.put(
+        `${API_BASE}/cart/${itemId}`, 
+        { quantity: newQuantity },
+        { 
+          headers: { 
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          } 
+        }
+      );
+
+      if (response.data.success) {
+        setCartItems(response.data.cart);
+      } else {
+        throw new Error(response.data.message || 'Failed to update quantity');
       }
     } catch (err) {
       console.error('Error updating quantity:', err);
+      toast.error(err.response?.data?.message || err.message || 'Failed to update quantity');
     }
   };
 
@@ -67,18 +92,29 @@ const Cart = () => {
   const removeItem = async (itemId) => {
     try {
       const token = localStorage.getItem('token');
-      if (token) {
-        await axios.delete(`http://localhost:5000/cart/${itemId}`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        setCartItems(prev => prev.filter(item => item._id !== itemId));
-      } else {
+      if (!token) {
         const updatedCart = cartItems.filter(item => item._id !== itemId);
         setCartItems(updatedCart);
         localStorage.setItem('cartItems', JSON.stringify(updatedCart));
+        return;
+      }
+
+      const response = await axios.delete(`${API_BASE}/cart/${itemId}`, {
+        headers: { 
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (response.data.success) {
+        setCartItems(response.data.cart);
+        toast.success('Item removed from cart');
+      } else {
+        throw new Error(response.data.message || 'Failed to remove item');
       }
     } catch (err) {
       console.error('Error removing item:', err);
+      toast.error(err.response?.data?.message || err.message || 'Failed to remove item from cart');
     }
   };
 
@@ -86,23 +122,40 @@ const Cart = () => {
   const clearCart = async () => {
     try {
       const token = localStorage.getItem('token');
-      if (token) {
-        await axios.delete('http://localhost:5000/cart', {
-          headers: { Authorization: `Bearer ${token}` }
-        });
+      if (!token) {
+        setCartItems([]);
+        localStorage.removeItem('cartItems');
+        toast.success('Cart cleared');
+        return;
       }
-      setCartItems([]);
-      localStorage.removeItem('cartItems');
+
+      const response = await axios.delete(`${API_BASE}/cart`, {
+        headers: { 
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (response.data.success) {
+        setCartItems([]);
+        localStorage.removeItem('cartItems');
+        toast.success('Cart cleared');
+      } else {
+        throw new Error(response.data.message || 'Failed to clear cart');
+      }
     } catch (err) {
       console.error('Error clearing cart:', err);
+      toast.error(err.response?.data?.message || err.message || 'Failed to clear cart');
     }
   };
 
   // Calculate totals
   const calculateSubtotal = () => {
     return cartItems.reduce((total, item) => {
-      const price = item.listing?.price || item.price;
-      return total + (price * item.quantity);
+      // Get price from the listing object first, then fallback to item price
+      const price = Number(item.listing?.price || item.price || 0);
+      const quantity = Number(item.quantity || 1);
+      return total + (price * quantity);
     }, 0);
   };
 
@@ -114,39 +167,51 @@ const Cart = () => {
 
   const handleCheckout = async () => {
     try {
+      setProcessing(true);
       const token = localStorage.getItem('token');
       if (!token) {
+        toast.error('Please log in to checkout');
         navigate('/login');
         return;
       }
 
+      // Initialize payment
       const response = await axios.post(
-        'http://localhost:5000/api/payment/ssl',
+        'http://localhost:5000/api/payment/init',
         {
-          amount: calculateTotal().toFixed(2),
+          items: cartItems.map(item => ({
+            listing: item.listing._id,
+            quantity: Number(item.quantity || 1),
+            price: Number(item.listing.price || 0)
+          })),
+          totalAmount: Number(calculateTotal())
         },
-        {
-          headers: {
+        { 
+          headers: { 
             Authorization: `Bearer ${token}`,
-          },
+            'Content-Type': 'application/json'
+          } 
         }
       );
 
-      if (response.data?.GatewayPageURL) {
-        window.location.href = response.data.GatewayPageURL;
+      // Redirect to payment status page
+      if (response.data.success && response.data.url) {
+        window.location.href = response.data.url;
       } else {
-        throw new Error('No gateway URL received');
+        toast.error(response.data.message || 'Failed to initialize payment');
       }
     } catch (error) {
-      console.error('Payment initialization failed:', error);
-      alert(error.response?.data?.error || 'Payment failed. Please try again.');
+      console.error('Error processing payment:', error);
+      toast.error(error.response?.data?.message || 'Failed to process payment');
+    } finally {
+      setProcessing(false);
     }
   };
 
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-50 dark:bg-gray-900">
-        <Loader className="animate-spin" size={32} />
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
       </div>
     );
   }
@@ -173,7 +238,6 @@ const Cart = () => {
           </button>
           
           <div className="flex items-center space-x-4">
-            
             <h1 className="text-2xl md:text-3xl font-bold dark:text-white">Your Cart</h1>
           </div>
           
@@ -189,131 +253,105 @@ const Cart = () => {
             <p className="text-gray-600 dark:text-gray-300 mb-6">Browse our marketplace to find what you need</p>
             <button
               onClick={() => navigate('/marketplace/buy')}
-              className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800"
+              className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800"
             >
               Start Shopping
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Cart Items */}
-            <div className="lg:col-span-2">
-              {cartItems.map(item => {
-                const listing = item.listing || item;
-                return (
-                  <div 
-                    key={item._id} 
-                    className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 mb-4 hover:shadow-lg transition-shadow"
-                  >
-                    <div className="flex flex-col sm:flex-row">
-                      {/* Item Image */}
-                      <div className="w-full sm:w-32 h-32 bg-gray-200 dark:bg-gray-700 rounded-lg overflow-hidden mb-4 sm:mb-0">
-                        {listing.images?.[0] ? (
-                          <img 
-                            src={`http://localhost:5000/images/${listing.images[0]}`}
-                            alt={listing.title}
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-gray-400 dark:text-gray-300">
-                            <ShoppingCart size={32} />
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Item Details */}
-                      <div className="flex-1 sm:ml-4">
-                        <div className="flex justify-between items-start mb-2">
-                          <div>
-                            <h3 className="text-lg font-bold dark:text-white">{listing.title}</h3>
-                            <p className="text-sm text-gray-600 dark:text-gray-400">{listing.university}</p>
-                          </div>
-                          <button
-                            onClick={() => removeItem(item._id)}
-                            className="p-2 text-red-500 hover:bg-red-50 rounded-full dark:hover:bg-red-900/30"
-                          >
-                            <Trash2 size={20} />
-                          </button>
+          <>
+            {/* Cart items */}
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow mb-6">
+              {cartItems.map((item) => (
+                <div key={item._id} className="p-4 border-b dark:border-gray-700 last:border-0">
+                  <div className="flex items-center">
+                    <div className="w-20 h-20 bg-gray-200 dark:bg-gray-700 rounded-lg overflow-hidden">
+                      {item.listing?.images?.[0] ? (
+                        <img
+                          src={`http://localhost:5000/images/${item.listing.images[0]}`}
+                          alt={item.listing.title}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <ShoppingCart size={24} className="text-gray-400" />
                         </div>
-
-                        <div className="flex justify-between items-center mt-4">
-                          <div className="flex items-center">
-                            <span className="mr-4 dark:text-gray-300">Quantity:</span>
-                            <div className="flex items-center border rounded-lg dark:border-gray-600">
-                              <button
-                                onClick={() => updateQuantity(item._id, item.quantity - 1)}
-                                className="px-3 py-1 hover:bg-gray-100 dark:hover:bg-gray-700"
-                              >
-                                -
-                              </button>
-                              <span className="px-4 py-1 border-x dark:border-gray-600 dark:text-gray-300">
-                                {item.quantity}
-                              </span>
-                              <button
-                                onClick={() => updateQuantity(item._id, item.quantity + 1)}
-                                className="px-3 py-1 hover:bg-gray-100 dark:hover:bg-gray-700"
-                              >
-                                +
-                              </button>
-                            </div>
-                          </div>
-                          <span className="font-bold text-lg dark:text-white">
-                            ৳{((listing.price || 0) * item.quantity).toFixed(2)}
-                          </span>
-                        </div>
+                      )}
+                    </div>
+                    
+                    <div className="flex-1 ml-4">
+                      <h3 className="text-lg font-semibold dark:text-white">{item.listing?.title}</h3>
+                      <p className="text-gray-600 dark:text-gray-300">{item.listing?.university}</p>
+                      <p className="text-blue-600 dark:text-blue-400 font-bold">৳{item.listing?.price}</p>
+                    </div>
+                    
+                    <div className="flex items-center space-x-4">
+                      <div className="flex items-center space-x-2">
+                        <button
+                          onClick={() => updateQuantity(item._id, item.quantity - 1)}
+                          className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                        >
+                          -
+                        </button>
+                        <span className="w-8 text-center dark:text-white">{item.quantity}</span>
+                        <button
+                          onClick={() => updateQuantity(item._id, item.quantity + 1)}
+                          className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                        >
+                          +
+                        </button>
                       </div>
+                      
+                      <button
+                        onClick={() => removeItem(item._id)}
+                        className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
+                      >
+                        <Trash2 size={20} />
+                      </button>
                     </div>
                   </div>
-                );
-              })}
+                </div>
+              ))}
             </div>
 
-            {/* Order Summary */}
-            <div className="lg:col-span-1">
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 sticky top-6">
-                <h2 className="text-xl font-bold mb-4 dark:text-white">Order Summary</h2>
-                
-                <div className="space-y-3 mb-6">
-                  <div className="flex justify-between dark:text-gray-300">
-                    <span>Subtotal ({cartItems.reduce((total, item) => total + item.quantity, 0)} items)</span>
-                    <span>৳{calculateSubtotal().toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between dark:text-gray-300">
-                    <span>Shipping</span>
-                    <span className="text-green-600 dark:text-green-400">Free</span>
-                  </div>
-                  <div className="border-t pt-3 dark:border-gray-700"></div>
-                  <div className="flex justify-between font-bold text-lg dark:text-white">
-                    <span>Total</span>
-                    <span>৳{calculateTotal().toFixed(2)}</span>
-                  </div>
-                </div>
-
-                <button
-                  onClick={handleCheckout}
-                  disabled={cartItems.length === 0}
-                  className="w-full py-3 bg-orange-600 text-white rounded-lg font-bold hover:bg-orange-700 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center"
-                >
-                  Proceed to Payment
-                </button>
-
-                <div className="mt-4 text-sm text-gray-600 dark:text-gray-400">
-                  <p className="flex items-center mb-1">
-                    <svg className="w-4 h-4 mr-2 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-                    </svg>
-                    Campus pickup available
-                  </p>
-                  <p className="flex items-center">
-                    <svg className="w-4 h-4 mr-2 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-                    </svg>
-                    Secure student-to-student transactions
-                  </p>
+            {/* Summary */}
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+              <div className="flex justify-between mb-4">
+                <span className="text-gray-600 dark:text-gray-300">Subtotal</span>
+                <span className="font-semibold dark:text-white">৳{calculateSubtotal()}</span>
+              </div>
+              <div className="flex justify-between mb-4">
+                <span className="text-gray-600 dark:text-gray-300">Shipping</span>
+                <span className="font-semibold text-green-600 dark:text-green-400">Free</span>
+              </div>
+              <div className="border-t dark:border-gray-700 pt-4 mb-6">
+                <div className="flex justify-between">
+                  <span className="text-lg font-bold dark:text-white">Total</span>
+                  <span className="text-lg font-bold text-blue-600 dark:text-blue-400">৳{calculateTotal()}</span>
                 </div>
               </div>
+              
+              <div className="flex justify-between">
+                <button
+                  onClick={clearCart}
+                  className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
+                >
+                  Clear Cart
+                </button>
+                <button
+                  onClick={handleCheckout}
+                  disabled={processing}
+                  className={`bg-blue-600 text-white px-8 py-2 rounded-lg ${
+                    processing
+                      ? 'opacity-50 cursor-not-allowed'
+                      : 'hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800'
+                  }`}
+                >
+                  {processing ? 'Processing...' : 'Checkout'}
+                </button>
+              </div>
             </div>
-          </div>
+          </>
         )}
       </div>
     </div>

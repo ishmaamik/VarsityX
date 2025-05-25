@@ -35,7 +35,7 @@ const userSchema = new mongoose.Schema({
   },
   role: {
     type: String,
-    enum: ['User', 'Admin', 'student-admin'],
+    enum: ['User', 'Admin', 'StudentAdmin'],
     default: 'User'
   },
   isVerified: {
@@ -103,6 +103,14 @@ const userSchema = new mongoose.Schema({
   updatedAt: {
     type: Date,
     default: Date.now
+  },
+  isBanned: {
+    type: Boolean,
+    default: false
+  },
+  banReason: {
+    type: String,
+    default: null
   }
 }, { timestamps: true });
 

@@ -1,7 +1,7 @@
 // routes/userRoutes.js
 import express from 'express';
 import passport from 'passport';
-import { login, register, googleOAuth, getUserData, searchUsers, updateUniversity } from '../controllers/userController.js';
+import { login, register, googleOAuth, getUserData, searchUsers, updateUniversity, getUsersByUniversity } from '../controllers/userController.js';
 import { authorizeRole } from '../middleware/roleMiddleware.js';
 import { authenticate } from '../middleware/authMiddleware.js';
 
@@ -18,5 +18,14 @@ router.get('/search', authenticate, searchUsers);
 
 // Add update university route (protected)
 router.put('/update-university', authenticate, updateUniversity);
+
+// Protected routes
+router.use(authenticate);
+
+// Admin/StudentAdmin routes
+router.get('/university/:university', 
+  authorizeRole(['Admin', 'StudentAdmin']), 
+  getUsersByUniversity
+);
 
 export default router;

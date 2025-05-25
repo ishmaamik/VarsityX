@@ -1,5 +1,7 @@
 import express from 'express';
-import { getUniversities } from '../controllers/universityController.js';
+import { getUniversities, addUniversity } from '../controllers/universityController.js';
+import { authenticate } from '../middleware/authMiddleware.js';
+import { authorizeRole } from '../middleware/roleMiddleware.js';
 
 const router = express.Router();
 
@@ -7,5 +9,11 @@ const router = express.Router();
 // @desc    Get all universities
 // @access  Public
 router.get('/', getUniversities);
+
+// Protected routes
+router.use(authenticate);
+router.use(authorizeRole(['Admin']));
+
+router.post('/', addUniversity);
 
 export default router; 

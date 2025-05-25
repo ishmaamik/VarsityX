@@ -55,6 +55,14 @@ export const addToCart = async (req, res) => {
       });
     }
 
+    const user = await User.findById(req.user.userId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
     // Check if listing belongs to the user
     if (listing.seller.toString() === req.user.userId) {
       return res.status(400).json({
@@ -62,12 +70,20 @@ export const addToCart = async (req, res) => {
         message: 'You cannot add your own listing to cart'
       });
     }
-    
-    const user = await User.findById(req.user.userId);
-    if (!user) {
-      return res.status(404).json({
+
+    // Check if listing is available
+    if (listing.status !== 'active') {
+      return res.status(400).json({
         success: false,
-        message: 'User not found'
+        message: 'This listing is not available for purchase'
+      });
+    }
+
+    // Check university visibility
+    if (listing.visibility === 'university' && listing.university !== user.university) {
+      return res.status(403).json({
+        success: false,
+        message: 'You do not have permission to purchase this listing'
       });
     }
     

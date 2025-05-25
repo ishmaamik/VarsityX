@@ -19,6 +19,7 @@ import CampusNavigation from "./components/CampusNavigation";
 import ImageUploader from "./components/ImageUploader";
 import PriceAdvisorPage from "./pages/PriceAdvisorPage";
 import Profile from "./pages/Profile";
+import StudentProfile from "./pages/StudentProfile";
 import ReviewSystem from "./components/ReviewSystem";
 import Reviews from "./pages/Reviews";
 import ChatAI from "./pages/chatai";
@@ -206,23 +207,11 @@ function AppContent() {
         />
 
         <Route
-          path="/reviews/:type/:id"
+          path="/student-profile"
           element={
-            <ProtectedRoute>
               <Layout>
-                <ReviewSystem />
+                <StudentProfile />
               </Layout>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/reviews"
-          element={
-            <ProtectedRoute>
-              <Layout>
-                <Reviews />
-              </Layout>
-            </ProtectedRoute>
           }
         />
 

@@ -26,6 +26,10 @@ import fs from 'fs';
 import path from 'path';
 import authRoutes from './routes/auth.js';
 import universityRoutes from './routes/universityRoutes.js';
+import bidRoutes from './routes/bidRoutes.js';
+import studentAdminRoutes from './routes/studentAdminRoutes.js';
+import listingRoutes from './routes/listingRoutes.js';  // Import listing routes
+import studentProfileRoutes from './routes/studentProfileRoutes.js';
 import upload from './middleware/upload.js';
 import './config/passport.js';
 
@@ -94,8 +98,11 @@ mongoose.connect(process.env.MONGO_URI)
     app.use('/api/transactions', transactionRoutes);
     app.use('/api/payment', paymentRoutes);
     app.use('/api/auth', authRoutes);
-    app.use('/api/users', userRoutes);
     app.use('/api/universities', universityRoutes);
+    app.use('/api/bids', bidRoutes);
+    app.use('/api/student-admin', studentAdminRoutes);
+    app.use('/api/listings', listingRoutes);
+    app.use('/student-profile', studentProfileRoutes);
     app.use('/api/chatai', chataiRoutes);
 
     // Home route

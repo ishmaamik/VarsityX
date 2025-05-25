@@ -72,7 +72,7 @@ const StudentAdmins = () => {
                             </tr>
                         </thead>
                         <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                            {studentAdmins.map((admin) => (
+                            {studentAdmins?.map((admin) => (
                                 <tr key={admin._id}>
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         <div className="flex items-center">

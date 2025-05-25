@@ -51,7 +51,8 @@ const BuyPage = () => {
             condition: filterCondition === 'Condition' ? null : filterCondition,
             minPrice: filterPriceMin || null,
             maxPrice: filterPriceMax || null,
-            sortBy
+            sortBy,
+            includeOwn: false // Exclude user's own listings
           }
         });
         setListings(response.data.listings);
@@ -95,22 +96,14 @@ const BuyPage = () => {
     try {
       const token = localStorage.getItem('token');
       if (token) {
-        await axios.post('http://localhost:5000/cart', 
+        // Add to cart on server
+        const response = await axios.post('http://localhost:5000/cart', 
           { listingId: product._id, quantity: 1 },
           { headers: { Authorization: `Bearer ${token}` } }
         );
-        // Update local state
-        setCartItems(prev => {
-          const existing = prev.find(item => item.listing?._id === product._id);
-          if (existing) {
-            return prev.map(item => 
-              item.listing?._id === product._id 
-                ? { ...item, quantity: item.quantity + 1 } 
-                : item
-            );
-          }
-          return [...prev, { listing: product, quantity: 1 }];
-        });
+        
+        // Update cart items from server response
+        setCartItems(response.data.cart);
       } else {
         // For guest users
         const updated = [...cartItems];
@@ -261,43 +254,53 @@ const BuyPage = () => {
 
         {/* Listings Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {listings.map(item => (
+          {listings.map((listing) => (
             <div 
-              key={item._id} 
+              key={listing._id} 
               className="bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-shadow cursor-pointer"
-              onClick={() => navigate(`/marketplace/listing/${item._id}`)}
+              onClick={() => navigate(`/marketplace/listing/${listing._id}`)}
             >
-              <div className="h-48 bg-gray-200 dark:bg-gray-700 overflow-hidden">
-                {item.images?.[0] ? (
+              <div className="h-48 overflow-hidden">
+                {listing.images?.[0] ? (
                   <img 
-                    src={`http://localhost:5000/images/${item.images[0]}`}
-                    alt={item.title}
+                    src={`http://localhost:5000/images/${listing.images[0]}`}
+                    alt={listing.title}
                     className="w-full h-full object-cover"
                   />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center text-gray-400">
-                    <ShoppingCart size={48} />
+                  <div className="w-full h-full flex items-center justify-center bg-gray-200 dark:bg-gray-700">
+                    <ShoppingCart size={48} className="text-gray-400" />
                   </div>
                 )}
               </div>
               <div className="p-4">
-                <h3 className="text-lg font-bold mb-1 dark:text-white">{item.title}</h3>
-                <div className="flex justify-between items-center mb-2">
-                  <span className="text-blue-600 dark:text-blue-400 font-bold">৳{item.price || item.hourlyRate || item.currentBid}</span>
-                  <span className="text-sm text-gray-500 dark:text-gray-400">{item.university}</span>
+                <h3 className="text-lg font-bold mb-1 dark:text-white">{listing.title}</h3>
+                <div className="flex justify-between items-center">
+                  <span className="text-blue-600 dark:text-blue-400 font-bold">
+                    ৳{listing.price || listing.hourlyRate || listing.currentBid}
+                  </span>
+                  <span className="text-sm text-gray-500 dark:text-gray-400">{listing.university}</span>
                 </div>
-                <p className="text-sm text-gray-600 dark:text-gray-300 mb-2">
-                  {item.condition || 'Service'}
-                </p>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    addToCart(item);
-                  }}
-                  className="w-full py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800"
-                >
-                  Add to Cart
-                </button>
+                {listing.seller === localStorage.getItem('userId') ? (
+                  <button 
+                    onClick={(e) => e.stopPropagation()}
+                    className="w-full mt-4 py-2 bg-gray-400 text-white rounded-lg cursor-not-allowed"
+                    disabled
+                    title="You cannot add your own listing to cart"
+                  >
+                    Your Listing
+                  </button>
+                ) : (
+                  <button 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      addToCart(listing);
+                    }}
+                    className="w-full mt-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800"
+                  >
+                    Add to Cart
+                  </button>
+                )}
               </div>
             </div>
           ))}

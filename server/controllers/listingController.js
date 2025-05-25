@@ -1,8 +1,22 @@
 import Listing from '../models/Listing.js';
 import User from '../models/User.js';
+import StudentAdmin from '../models/StudentAdmin.js';
+
+export {
+  createListing,
+  getListings,
+  getListing,
+  updateListing,
+  deleteListing,
+  placeBid,
+  getPendingListings,
+  moderateListing,
+  getListingStats,
+  getApprovedListings
+};
 
 // Create a new listing
-export const createListing = async (req, res) => {
+const createListing = async (req, res) => {
   try {
     const { 
       title, 
@@ -65,12 +79,25 @@ export const createListing = async (req, res) => {
 };
 
 // Get all listings with filters
-export const getListings = async (req, res) => {
+const getListings = async (req, res) => {
   try {
-    const { search, category, university, condition, minPrice, maxPrice, sortBy } = req.query;
+    const { search, category, university, condition, minPrice, maxPrice, sortBy, includeOwn = false, onlyOwn = false } = req.query;
     
     // Build the query object
     let query = { status: 'active' };
+    
+    // Handle user's own listings
+    if (req.user) {
+      if (onlyOwn === 'true') {
+        // Only show user's own listings
+        query.seller = req.user.userId;
+        // Show all statuses for own listings
+        delete query.status;
+      } else if (includeOwn !== 'true') {
+        // Exclude user's own listings
+        query.seller = { $ne: req.user.userId };
+      }
+    }
     
     // Apply search filter
     if (search) {
@@ -98,11 +125,11 @@ export const getListings = async (req, res) => {
     }
 
     // Apply visibility and university filter
-    if (req.user) {
+    if (req.user && !onlyOwn) { // Skip visibility check for own listings
       const user = await User.findById(req.user.userId);
       if (user?.university) {
         // Show all public listings AND university-specific listings for user's university
-        query.$or = [
+        const visibilityQuery = [
           { visibility: 'all' },
           { 
             $and: [
@@ -112,25 +139,24 @@ export const getListings = async (req, res) => {
           }
         ];
 
+        // If we already have an $or query for search, we need to combine them
+        if (query.$or) {
+          const searchQuery = query.$or;
+          delete query.$or;
+          query.$and = [
+            { $or: searchQuery },
+            { $or: visibilityQuery }
+          ];
+        } else {
+          query.$or = visibilityQuery;
+        }
+
         // If university filter is applied
         if (university && university !== 'all') {
-          // Show only listings from the selected university that are either:
-          // 1. Public listings from that university OR
-          // 2. University-specific listings if user is from that university
           query = {
             $and: [
               { university },
-              {
-                $or: [
-                  { visibility: 'all' },
-                  {
-                    $and: [
-                      { visibility: 'university' },
-                      { university: user.university }
-                    ]
-                  }
-                ]
-              }
+              query
             ]
           };
         }
@@ -141,12 +167,6 @@ export const getListings = async (req, res) => {
           query.university = university;
         }
       }
-    } else {
-      // If not logged in, only show public listings
-      query.visibility = 'all';
-      if (university && university !== 'all') {
-        query.university = university;
-      }
     }
     
     // Set sort options
@@ -154,10 +174,14 @@ export const getListings = async (req, res) => {
     if (sortBy === 'price-low') sortOption = { price: 1 };
     if (sortBy === 'price-high') sortOption = { price: -1 };
     
+    console.log('Query:', JSON.stringify(query, null, 2)); // Debug log
+    
     // Execute query
     const listings = await Listing.find(query)
       .sort(sortOption)
       .populate('seller', 'displayName university rating');
+    
+    console.log('Found listings:', listings.length); // Debug log
     
     res.json({
       success: true,
@@ -176,7 +200,7 @@ export const getListings = async (req, res) => {
 };
 
 // Get listing details
-export const getListing = async (req, res) => {
+const getListing = async (req, res) => {
   try {
     const listing = await Listing.findById(req.params.id)
       .populate('seller', 'displayName university rating listings createdAt')
@@ -203,7 +227,7 @@ export const getListing = async (req, res) => {
 };
 
 // Update listing
-export const updateListing = async (req, res) => {
+const updateListing = async (req, res) => {
   try {
     const listing = await Listing.findById(req.params.id);
     
@@ -242,7 +266,7 @@ export const updateListing = async (req, res) => {
 };
 
 // Delete listing
-export const deleteListing = async (req, res) => {
+const deleteListing = async (req, res) => {
   try {
     const listing = await Listing.findById(req.params.id);
     
@@ -282,7 +306,7 @@ export const deleteListing = async (req, res) => {
 };
 
 // Place a bid on a listing
-export const placeBid = async (req, res) => {
+const placeBid = async (req, res) => {
   try {
     const { amount } = req.body;
     const listing = await Listing.findById(req.params.id);
@@ -329,4 +353,154 @@ export const placeBid = async (req, res) => {
       error: err.message
     });
   }
+};
+
+// Get pending listings for admin/student-admin
+const getPendingListings = async (req, res) => {
+  try {
+    let query = { status: 'pending' };
+    
+    // If student admin, only show listings from their university
+    if (req.user.role === 'StudentAdmin') {
+      const studentAdmin = await StudentAdmin.findOne({ user: req.user.userId });
+      if (!studentAdmin) {
+        return res.status(403).json({
+          success: false,
+          message: 'Not authorized as student admin'
+        });
+      }
+      query.university = studentAdmin.university;
+    }
+
+    const listings = await Listing.find(query)
+      .populate('seller', 'displayName email university')
+      .sort('-createdAt');
+
+    res.json({
+      success: true,
+      data: listings
+    });
+  } catch (error) {
+    console.error('Error fetching pending listings:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching pending listings'
+    });
+  }
+};
+
+// Moderate listing (approve/reject)
+const moderateListing = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { action, reason } = req.body;
+
+    if (!['approve', 'reject'].includes(action)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid action. Must be either approve or reject'
+      });
+    }
+
+    const listing = await Listing.findById(id);
+    if (!listing) {
+      return res.status(404).json({
+        success: false,
+        message: 'Listing not found'
+      });
+    }
+
+    // Check if student admin has permission for this university
+    if (req.user.role === 'StudentAdmin') {
+      const studentAdmin = await StudentAdmin.findOne({ user: req.user.userId });
+      if (!studentAdmin || listing.university !== studentAdmin.university) {
+        return res.status(403).json({
+          success: false,
+          message: 'Not authorized to moderate this listing'
+        });
+      }
+
+      // Update student admin stats
+      if (action === 'approve') {
+        studentAdmin.moderationStats.listingsApproved += 1;
+      } else {
+        studentAdmin.moderationStats.listingsRejected += 1;
+      }
+      await studentAdmin.save();
+    }
+
+    // Update listing
+    listing.status = action === 'approve' ? 'active' : 'rejected';
+    listing.moderatedBy = req.user.userId;
+    listing.moderatedAt = new Date();
+    if (action === 'reject') {
+      listing.rejectionReason = reason;
+    }
+    await listing.save();
+
+    res.json({
+      success: true,
+      message: `Listing ${action}d successfully`
+    });
+  } catch (error) {
+    console.error('Error moderating listing:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error moderating listing'
+    });
+  }
+};
+
+// Get listing stats for admin dashboard
+const getListingStats = async (req, res) => {
+  try {
+    let query = {};
+    
+    // If student admin, only count listings from their university
+    if (req.user.role === 'StudentAdmin') {
+      const studentAdmin = await StudentAdmin.findOne({ user: req.user.userId });
+      if (!studentAdmin) {
+        return res.status(403).json({
+          success: false,
+          message: 'Not authorized as student admin'
+        });
+      }
+      query.university = studentAdmin.university;
+    }
+
+    const stats = await Listing.aggregate([
+      { $match: query },
+      {
+        $group: {
+          _id: null,
+          total: { $sum: 1 },
+          pending: {
+            $sum: { $cond: [{ $eq: ['$status', 'pending'] }, 1, 0] }
+          },
+          active: {
+            $sum: { $cond: [{ $eq: ['$status', 'active'] }, 1, 0] }
+          },
+          rejected: {
+            $sum: { $cond: [{ $eq: ['$status', 'rejected'] }, 1, 0] }
+          }
+        }
+      }
+    ]);
+
+    res.json({
+      success: true,
+      data: stats[0] || { total: 0, pending: 0, active: 0, rejected: 0 }
+    });
+  } catch (error) {
+    console.error('Error getting listing stats:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error getting listing stats'
+    });
+  }
+};
+
+// Get approved listings
+const getApprovedListings = async (req, res) => {
+  // ... existing code ...
 };

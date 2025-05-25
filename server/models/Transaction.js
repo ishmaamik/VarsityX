@@ -6,28 +6,57 @@ const transactionSchema = new mongoose.Schema({
     ref: 'User',
     required: true
   },
-  transactionId: {
-    type: String,
-    required: true,
-    unique: true
-  },
-  amount: {
+  items: [{
+    listing: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Listing',
+      required: true
+    },
+    quantity: {
+      type: Number,
+      required: true,
+      min: 1,
+      default: 1
+    },
+    price: {
+      type: Number,
+      required: true
+    }
+  }],
+  totalAmount: {
     type: Number,
     required: true
   },
+  currency: {
+    type: String,
+    default: 'BDT'
+  },
   status: {
     type: String,
-    enum: ['Initiated', 'Completed', 'Failed', 'Cancelled'],
+    enum: ['Initiated', 'Processing', 'Completed', 'Failed', 'Cancelled', 'Refunded'],
     default: 'Initiated'
   },
   paymentDetails: {
-    validationId: String,
+    tran_id: String,
+    val_id: String,
     amount: Number,
-    cardType: String,
-    cardNumber: String,
-    bankTransactionId: String,
+    card_type: String,
+    store_amount: Number,
+    card_no: String,
+    bank_tran_id: String,
     status: String,
-    transactionDate: Date
+    tran_date: Date,
+    error: String,
+    currency: String,
+    card_issuer: String,
+    card_brand: String,
+    card_issuer_country: String,
+    card_issuer_country_code: String,
+    store_id: String,
+    verify_sign: String,
+    verify_key: String,
+    risk_level: Number,
+    risk_title: String
   },
   createdAt: {
     type: Date,
