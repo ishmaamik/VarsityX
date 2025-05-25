@@ -25,7 +25,11 @@ const MarketplaceHome = () => {
 
         const response = await axios.get('http://localhost:5000/marketplace', {
           headers,
-          params: { limit: 100, sortBy: 'newest' }
+          params: { 
+            limit: 100, 
+            sortBy: 'newest',
+            includeOwn: false // Exclude user's own listings
+          }
         });
         setFeaturedListings(response.data.listings);
       } catch (err) {
@@ -43,7 +47,7 @@ const MarketplaceHome = () => {
       try {
         const token = localStorage.getItem('token');
         if (token) {
-          const response = await axios.get('http://localhost:5000/cart', {
+          const response = await axios.get('http://localhost:5000/api/cart', {
             headers: { Authorization: `Bearer ${token}` }
           });
           setCartItems(response.data.cart);
@@ -70,22 +74,14 @@ const MarketplaceHome = () => {
     try {
       const token = localStorage.getItem('token');
       if (token) {
-        await axios.post('http://localhost:5000/cart', 
+        // Add to cart on server
+        const response = await axios.post('http://localhost:5000/api/cart', 
           { listingId: product._id, quantity: 1 },
           { headers: { Authorization: `Bearer ${token}` } }
         );
-        // Update local state
-        setCartItems(prev => {
-          const existing = prev.find(item => item.listing?._id === product._id);
-          if (existing) {
-            return prev.map(item => 
-              item.listing?._id === product._id 
-                ? { ...item, quantity: item.quantity + 1 } 
-                : item
-            );
-          }
-          return [...prev, { listing: product, quantity: 1 }];
-        });
+        
+        // Update cart items from server response
+        setCartItems(response.data.cart);
       } else {
         // For guest users
         const updated = [...cartItems];
@@ -237,15 +233,26 @@ const MarketplaceHome = () => {
                     </span>
                     <span className="text-sm text-gray-500 dark:text-gray-400">{listing.university}</span>
                   </div>
-                  <button 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      addToCart(listing);
-                    }}
-                    className="w-full mt-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800"
-                  >
-                    Add to Cart
-                  </button>
+                  {listing.seller === localStorage.getItem('userId') ? (
+                    <button 
+                      onClick={(e) => e.stopPropagation()}
+                      className="w-full mt-4 py-2 bg-gray-400 text-white rounded-lg cursor-not-allowed"
+                      disabled
+                      title="You cannot add your own listing to cart"
+                    >
+                      Your Listing
+                    </button>
+                  ) : (
+                    <button 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        addToCart(listing);
+                      }}
+                      className="w-full mt-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800"
+                    >
+                      Add to Cart
+                    </button>
+                  )}
                 </div>
               </div>
             ))}

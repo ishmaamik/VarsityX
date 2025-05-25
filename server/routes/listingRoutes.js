@@ -3,6 +3,7 @@ import { authenticate } from '../middleware/authMiddleware.js';
 import { authorizeRole } from '../middleware/roleMiddleware.js';
 import {
   getPendingListings,
+  getApprovedListings,
   moderateListing,
   getListingStats
 } from '../controllers/listingController.js';
@@ -16,6 +17,11 @@ router.use(authenticate);
 router.get('/pending',
   authorizeRole(['Admin', 'StudentAdmin']),
   getPendingListings
+);
+
+router.get('/approved',
+  authorizeRole(['Admin', 'StudentAdmin']),
+  getApprovedListings
 );
 
 router.get('/stats',

@@ -25,6 +25,7 @@ import AdminSidebar from "./AdminSidebar";
 import axios from "axios";
 import StudentAdminManagement from './StudentAdminManagement';
 import PendingListings from '../components/admin/PendingListings';
+import ApprovedListings from '../components/admin/ApprovedListings';
 
 const AdminPanel = () => {
     const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -341,6 +342,12 @@ const AdminPanel = () => {
                     {activeMenu === "listings-pending" && (
                         <div className="p-6">
                             <PendingListings />
+                        </div>
+                    )}
+
+                    {activeMenu === "listings-approved" && (
+                        <div className="p-6">
+                            <ApprovedListings />
                         </div>
                     )}
 

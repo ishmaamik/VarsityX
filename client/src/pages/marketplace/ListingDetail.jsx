@@ -68,7 +68,7 @@ const ListingDetail = () => {
       try {
         const token = localStorage.getItem('token');
         if (token) {
-          const response = await axios.get('http://localhost:5000/cart', {
+          const response = await axios.get('http://localhost:5000/api/cart', {
             headers: { Authorization: `Bearer ${token}` }
           });
           setCartItems(response.data.cart);
@@ -121,7 +121,7 @@ const ListingDetail = () => {
     try {
       const token = localStorage.getItem('token');
       if (token) {
-        await axios.post('http://localhost:5000/cart', 
+        await axios.post('http://localhost:5000/api/cart', 
           { listingId: listing._id, quantity },
           { headers: { Authorization: `Bearer ${token}` } }
         );

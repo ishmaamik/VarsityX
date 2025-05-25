@@ -2,8 +2,21 @@ import Listing from '../models/Listing.js';
 import User from '../models/User.js';
 import StudentAdmin from '../models/StudentAdmin.js';
 
+export {
+  createListing,
+  getListings,
+  getListing,
+  updateListing,
+  deleteListing,
+  placeBid,
+  getPendingListings,
+  moderateListing,
+  getListingStats,
+  getApprovedListings
+};
+
 // Create a new listing
-export const createListing = async (req, res) => {
+const createListing = async (req, res) => {
   try {
     const { 
       title, 
@@ -66,12 +79,25 @@ export const createListing = async (req, res) => {
 };
 
 // Get all listings with filters
-export const getListings = async (req, res) => {
+const getListings = async (req, res) => {
   try {
-    const { search, category, university, condition, minPrice, maxPrice, sortBy } = req.query;
+    const { search, category, university, condition, minPrice, maxPrice, sortBy, includeOwn = false, onlyOwn = false } = req.query;
     
     // Build the query object
     let query = { status: 'active' };
+    
+    // Handle user's own listings
+    if (req.user) {
+      if (onlyOwn === 'true') {
+        // Only show user's own listings
+        query.seller = req.user.userId;
+        // Show all statuses for own listings
+        delete query.status;
+      } else if (includeOwn !== 'true') {
+        // Exclude user's own listings
+        query.seller = { $ne: req.user.userId };
+      }
+    }
     
     // Apply search filter
     if (search) {
@@ -99,11 +125,11 @@ export const getListings = async (req, res) => {
     }
 
     // Apply visibility and university filter
-    if (req.user) {
+    if (req.user && !onlyOwn) { // Skip visibility check for own listings
       const user = await User.findById(req.user.userId);
       if (user?.university) {
         // Show all public listings AND university-specific listings for user's university
-        query.$or = [
+        const visibilityQuery = [
           { visibility: 'all' },
           { 
             $and: [
@@ -113,25 +139,24 @@ export const getListings = async (req, res) => {
           }
         ];
 
+        // If we already have an $or query for search, we need to combine them
+        if (query.$or) {
+          const searchQuery = query.$or;
+          delete query.$or;
+          query.$and = [
+            { $or: searchQuery },
+            { $or: visibilityQuery }
+          ];
+        } else {
+          query.$or = visibilityQuery;
+        }
+
         // If university filter is applied
         if (university && university !== 'all') {
-          // Show only listings from the selected university that are either:
-          // 1. Public listings from that university OR
-          // 2. University-specific listings if user is from that university
           query = {
             $and: [
               { university },
-              {
-                $or: [
-                  { visibility: 'all' },
-                  {
-                    $and: [
-                      { visibility: 'university' },
-                      { university: user.university }
-                    ]
-                  }
-                ]
-              }
+              query
             ]
           };
         }
@@ -142,12 +167,6 @@ export const getListings = async (req, res) => {
           query.university = university;
         }
       }
-    } else {
-      // If not logged in, only show public listings
-      query.visibility = 'all';
-      if (university && university !== 'all') {
-        query.university = university;
-      }
     }
     
     // Set sort options
@@ -155,10 +174,14 @@ export const getListings = async (req, res) => {
     if (sortBy === 'price-low') sortOption = { price: 1 };
     if (sortBy === 'price-high') sortOption = { price: -1 };
     
+    console.log('Query:', JSON.stringify(query, null, 2)); // Debug log
+    
     // Execute query
     const listings = await Listing.find(query)
       .sort(sortOption)
       .populate('seller', 'displayName university rating');
+    
+    console.log('Found listings:', listings.length); // Debug log
     
     res.json({
       success: true,
@@ -177,7 +200,7 @@ export const getListings = async (req, res) => {
 };
 
 // Get listing details
-export const getListing = async (req, res) => {
+const getListing = async (req, res) => {
   try {
     const listing = await Listing.findById(req.params.id)
       .populate('seller', 'displayName university rating listings createdAt')
@@ -204,7 +227,7 @@ export const getListing = async (req, res) => {
 };
 
 // Update listing
-export const updateListing = async (req, res) => {
+const updateListing = async (req, res) => {
   try {
     const listing = await Listing.findById(req.params.id);
     
@@ -243,7 +266,7 @@ export const updateListing = async (req, res) => {
 };
 
 // Delete listing
-export const deleteListing = async (req, res) => {
+const deleteListing = async (req, res) => {
   try {
     const listing = await Listing.findById(req.params.id);
     
@@ -283,7 +306,7 @@ export const deleteListing = async (req, res) => {
 };
 
 // Place a bid on a listing
-export const placeBid = async (req, res) => {
+const placeBid = async (req, res) => {
   try {
     const { amount } = req.body;
     const listing = await Listing.findById(req.params.id);
@@ -333,7 +356,7 @@ export const placeBid = async (req, res) => {
 };
 
 // Get pending listings for admin/student-admin
-export const getPendingListings = async (req, res) => {
+const getPendingListings = async (req, res) => {
   try {
     let query = { status: 'pending' };
     
@@ -367,7 +390,7 @@ export const getPendingListings = async (req, res) => {
 };
 
 // Moderate listing (approve/reject)
-export const moderateListing = async (req, res) => {
+const moderateListing = async (req, res) => {
   try {
     const { id } = req.params;
     const { action, reason } = req.body;
@@ -429,7 +452,7 @@ export const moderateListing = async (req, res) => {
 };
 
 // Get listing stats for admin dashboard
-export const getListingStats = async (req, res) => {
+const getListingStats = async (req, res) => {
   try {
     let query = {};
     
@@ -475,4 +498,9 @@ export const getListingStats = async (req, res) => {
       message: 'Error getting listing stats'
     });
   }
+};
+
+// Get approved listings
+const getApprovedListings = async (req, res) => {
+  // ... existing code ...
 };

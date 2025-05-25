@@ -30,7 +30,9 @@ export const AuthProvider = ({ children }) => {
         // Get user data
         const response = await axios.get('http://localhost:5000/api/users/user-data');
         if (response.data.success) {
-          setUser(response.data.data);
+          const userData = response.data.data;
+          setUser(userData);
+          localStorage.setItem('userId', userData._id);
         } else {
           throw new Error(response.data.message || 'Failed to get user data');
         }
@@ -38,6 +40,7 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       console.error('Auth check failed:', error);
       localStorage.removeItem('token');
+      localStorage.removeItem('userId');
       delete axios.defaults.headers.common['Authorization'];
     } finally {
       setLoading(false);
@@ -53,8 +56,9 @@ export const AuthProvider = ({ children }) => {
       
       const { token, user } = response.data;
       
-      // Save token to localStorage
+      // Save token and user ID to localStorage
       localStorage.setItem('token', token);
+      localStorage.setItem('userId', user._id);
       
       // Set axios default header
       axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
@@ -72,6 +76,7 @@ export const AuthProvider = ({ children }) => {
 
   const logout = () => {
     localStorage.removeItem('token');
+    localStorage.removeItem('userId');
     delete axios.defaults.headers.common['Authorization'];
     setUser(null);
   };
