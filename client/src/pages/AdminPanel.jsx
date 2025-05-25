@@ -59,12 +59,12 @@ const AdminPanel = () => {
                 }
 
                 // Fetch listings stats
-                const listingsResponse = await axios.get('/api/admin/listings/stats', {
+                const listingsResponse = await axios.get('/admin/listings/stats', {
                     headers: { Authorization: `Bearer ${token}` }
                 });
 
                 // Fetch users stats
-                const usersResponse = await axios.get('/api/admin/users/stats', {
+                const usersResponse = await axios.get('/admin/users/stats', {
                     headers: { Authorization: `Bearer ${token}` }
                 });
 
@@ -76,13 +76,13 @@ const AdminPanel = () => {
                 });
 
                 // Fetch pending listings
-                const pendingResponse = await axios.get('/api/admin/listings/pending', {
+                const pendingResponse = await axios.get('/admin/listings/pending', {
                     headers: { Authorization: `Bearer ${token}` }
                 });
                 setPendingListings(pendingResponse.data.data || []);
 
                 // Fetch users with poor ratings
-                const poorRatingsResponse = await axios.get('/api/admin/users/poor-ratings', {
+                const poorRatingsResponse = await axios.get('/admin/users/poor-ratings', {
                     headers: { Authorization: `Bearer ${token}` }
                 });
                 setPoorRatedUsers(poorRatingsResponse.data.data || []);
@@ -102,13 +102,13 @@ const AdminPanel = () => {
         try {
             const token = localStorage.getItem('token');
             await axios.patch(
-                `/api/admin/listings/${listingId}/moderate`,
+                `/admin/listings/${listingId}/moderate`,
                 { action, reason },
                 { headers: { Authorization: `Bearer ${token}` } }
             );
 
             // Refresh pending listings
-            const response = await axios.get('/api/admin/listings/pending', {
+            const response = await axios.get('/admin/listings/pending', {
                 headers: { Authorization: `Bearer ${token}` }
             });
             setPendingListings(response.data.data || []);
@@ -121,13 +121,13 @@ const AdminPanel = () => {
         try {
             const token = localStorage.getItem('token');
             await axios.patch(
-                `/api/admin/users/${userId}/suspend`,
+                `/admin/users/${userId}/suspend`,
                 { reason },
                 { headers: { Authorization: `Bearer ${token}` } }
             );
 
             // Refresh poor rated users list
-            const response = await axios.get('/api/admin/users/poor-ratings', {
+            const response = await axios.get('/admin/users/poor-ratings', {
                 headers: { Authorization: `Bearer ${token}` }
             });
             setPoorRatedUsers(response.data.data || []);

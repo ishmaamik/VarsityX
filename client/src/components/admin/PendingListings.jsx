@@ -17,7 +17,7 @@ const PendingListings = () => {
   const fetchPendingListings = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get('http://localhost:5000/api/listings/pending', {
+      const response = await axios.get('http://localhost:5000/admin/listings/pending', {
         headers: { Authorization: `Bearer ${token}` }
       });
       setPendingListings(response.data.data || []);
@@ -41,7 +41,7 @@ const PendingListings = () => {
       }
 
       await axios.post(
-        `http://localhost:5000/api/listings/${listingId}/moderate`,
+        `http://localhost:5000/admin/listings/${listingId}/moderate`,
         {
           action,
           reason: rejectionReason

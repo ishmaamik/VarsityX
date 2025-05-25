@@ -14,7 +14,8 @@ import {
     assignStudentAdmin,
     removeStudentAdmin,
     getListingStats,
-    getUserStats
+    getUserStats,
+    getApprovedListings
 } from '../controllers/adminController.js';
 
 const router = express.Router();
@@ -33,6 +34,7 @@ router.patch('/users/:id/remove-student-admin', removeStudentAdmin);
 // Routes accessible by both admin and student-admin
 router.get('/stats', getDashboardStats);
 router.get('/listings/pending', getPendingListings);
+router.get('/listings/approved', getApprovedListings);
 router.patch('/listings/:id/moderate', moderateListing);
 router.get('/users/poor-ratings', getPoorRatedUsers);
 router.patch('/users/:id/suspend', suspendUser);

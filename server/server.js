@@ -80,7 +80,7 @@ mongoose.connect(process.env.MONGO_URI)
     app.use('/user', userRoutes);
     app.use('/admin', adminRoutes);
     app.use('/marketplace', marketplaceRoutes);
-    app.use('/api/cart', cartRoutes);  // Only this route needs /api prefix
+    app.use('/cart', cartRoutes);
     app.use('/orders', orderRoutes);
     app.use('/reviews', reviewRoutes);
     app.use('/upload', uploadRoutes);
@@ -88,13 +88,12 @@ mongoose.connect(process.env.MONGO_URI)
     app.use('/api/price-advisor', priceAdvisorRoutes);
     app.use('/api/messages', messageRoutes);
     app.use('/api/transactions', transactionRoutes);
-    app.use('/api/payment', paymentRoutes);  // Register payment routes
+    app.use('/api/payment', paymentRoutes);
     app.use('/api/auth', authRoutes);
     app.use('/api/universities', universityRoutes);
-    app.use('/api/bids', bidRoutes);  // Register bid routes
-    app.use('/api/student-admin', studentAdminRoutes);  // Register student admin routes
-    app.use('/api/admin', adminRoutes);  // Make sure this line exists and is using the correct path
-    app.use('/api/listings', listingRoutes);  // Mount listing routes
+    app.use('/api/bids', bidRoutes);
+    app.use('/api/student-admin', studentAdminRoutes);
+    app.use('/api/listings', listingRoutes);
 
     // Error handler
     app.use((err, req, res, next) => {

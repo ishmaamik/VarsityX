@@ -13,7 +13,7 @@ const ApprovedListings = () => {
   const fetchApprovedListings = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get('http://localhost:5000/api/listings/approved', {
+      const response = await axios.get('http://localhost:5000/admin/listings/approved', {
         headers: { Authorization: `Bearer ${token}` }
       });
       setApprovedListings(response.data.data || []);

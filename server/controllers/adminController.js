@@ -1,8 +1,10 @@
 // controllers/adminController.js
 import User from '../models/User.js';
 import Listing from '../models/Listing.js';
+import StudentAdmin from '../models/StudentAdmin.js';
 import asyncHandler from '../middleware/async.js';
 import ErrorResponse from '../utils/errorResponse.js';
+import { sendEmail } from '../utils/email.js';
 
 // Admin-specific data (for demonstration)
 export const getAdminData = async (req, res) => {
@@ -325,6 +327,27 @@ export const moderateListing = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Error moderating listing'
+    });
+  }
+};
+
+export const getApprovedListings = async (req, res) => {
+  try {
+    const approvedListings = await Listing.find({ status: 'active' })
+      .populate('seller', 'displayName email')
+      .populate('university', 'name')
+      .sort({ createdAt: -1 });
+
+    res.json({
+      success: true,
+      data: approvedListings
+    });
+  } catch (error) {
+    console.error('Error fetching approved listings:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching approved listings',
+      error: error.message
     });
   }
 };
