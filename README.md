@@ -200,5 +200,5 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 For support, email support@varsityx.com or join our Discord community.
 
 ---
-@Built for students, by students.
-``
+Built for students, by students
+```
