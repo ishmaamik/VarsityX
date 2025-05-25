@@ -77,7 +77,7 @@ const BuyPage = () => {
       try {
         const token = localStorage.getItem('token');
         if (token) {
-          const response = await axios.get('http://localhost:5000/api/cart', {
+          const response = await axios.get('http://localhost:5000/cart', {
             headers: { Authorization: `Bearer ${token}` }
           });
           setCartItems(response.data.cart);
@@ -98,7 +98,7 @@ const BuyPage = () => {
       const token = localStorage.getItem('token');
       if (token) {
         // Add to cart on server
-        const response = await axios.post('http://localhost:5000/api/cart', 
+        const response = await axios.post('http://localhost:5000/cart', 
           { listingId: product._id, quantity: 1 },
           { headers: { Authorization: `Bearer ${token}` } }
         );

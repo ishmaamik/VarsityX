@@ -5,6 +5,8 @@ import { useTheme } from '../../context/ThemeContext';
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
 
+const API_BASE = 'http://localhost:5000';
+
 const Cart = () => {
   const navigate = useNavigate();
   const { darkMode, toggleDarkMode } = useTheme();
@@ -19,17 +21,28 @@ const Cart = () => {
       try {
         setLoading(true);
         const token = localStorage.getItem('token');
-        if (token) {
-          const response = await axios.get('http://localhost:5000/api/cart', {
-            headers: { Authorization: `Bearer ${token}` }
-          });
-          setCartItems(response.data.cart || []);
-        } else {
+        if (!token) {
           const savedCart = localStorage.getItem('cartItems');
           if (savedCart) setCartItems(JSON.parse(savedCart));
+          setLoading(false);
+          return;
+        }
+
+        const response = await axios.get(`${API_BASE}/cart`, {
+          headers: { 
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (response.data.success) {
+          setCartItems(response.data.cart || []);
+        } else {
+          throw new Error(response.data.message || 'Failed to fetch cart');
         }
       } catch (err) {
-        setError(err.response?.data?.message || 'Failed to load cart');
+        console.error('Error fetching cart:', err);
+        setError(err.response?.data?.message || err.message || 'Failed to load cart');
         toast.error('Failed to fetch cart items');
       } finally {
         setLoading(false);
@@ -44,22 +57,34 @@ const Cart = () => {
     
     try {
       const token = localStorage.getItem('token');
-      if (token) {
-        const response = await axios.put(`http://localhost:5000/api/cart/${itemId}`, 
-          { quantity: newQuantity },
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-        setCartItems(response.data.cart);
-      } else {
+      if (!token) {
         const updatedCart = cartItems.map(item => 
           item._id === itemId ? { ...item, quantity: newQuantity } : item
         );
         setCartItems(updatedCart);
         localStorage.setItem('cartItems', JSON.stringify(updatedCart));
+        return;
+      }
+
+      const response = await axios.put(
+        `${API_BASE}/cart/${itemId}`, 
+        { quantity: newQuantity },
+        { 
+          headers: { 
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          } 
+        }
+      );
+
+      if (response.data.success) {
+        setCartItems(response.data.cart);
+      } else {
+        throw new Error(response.data.message || 'Failed to update quantity');
       }
     } catch (err) {
       console.error('Error updating quantity:', err);
-      toast.error('Failed to update quantity');
+      toast.error(err.response?.data?.message || err.message || 'Failed to update quantity');
     }
   };
 
@@ -67,20 +92,29 @@ const Cart = () => {
   const removeItem = async (itemId) => {
     try {
       const token = localStorage.getItem('token');
-      if (token) {
-        const response = await axios.delete(`http://localhost:5000/api/cart/${itemId}`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        setCartItems(response.data.cart);
-        toast.success('Item removed from cart');
-      } else {
+      if (!token) {
         const updatedCart = cartItems.filter(item => item._id !== itemId);
         setCartItems(updatedCart);
         localStorage.setItem('cartItems', JSON.stringify(updatedCart));
+        return;
+      }
+
+      const response = await axios.delete(`${API_BASE}/cart/${itemId}`, {
+        headers: { 
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (response.data.success) {
+        setCartItems(response.data.cart);
+        toast.success('Item removed from cart');
+      } else {
+        throw new Error(response.data.message || 'Failed to remove item');
       }
     } catch (err) {
       console.error('Error removing item:', err);
-      toast.error('Failed to remove item from cart');
+      toast.error(err.response?.data?.message || err.message || 'Failed to remove item from cart');
     }
   };
 
@@ -88,25 +122,40 @@ const Cart = () => {
   const clearCart = async () => {
     try {
       const token = localStorage.getItem('token');
-      if (token) {
-        await axios.delete('http://localhost:5000/api/cart', {
-          headers: { Authorization: `Bearer ${token}` }
-        });
+      if (!token) {
+        setCartItems([]);
+        localStorage.removeItem('cartItems');
+        toast.success('Cart cleared');
+        return;
       }
-      setCartItems([]);
-      localStorage.removeItem('cartItems');
-      toast.success('Cart cleared');
+
+      const response = await axios.delete(`${API_BASE}/cart`, {
+        headers: { 
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (response.data.success) {
+        setCartItems([]);
+        localStorage.removeItem('cartItems');
+        toast.success('Cart cleared');
+      } else {
+        throw new Error(response.data.message || 'Failed to clear cart');
+      }
     } catch (err) {
       console.error('Error clearing cart:', err);
-      toast.error('Failed to clear cart');
+      toast.error(err.response?.data?.message || err.message || 'Failed to clear cart');
     }
   };
 
   // Calculate totals
   const calculateSubtotal = () => {
     return cartItems.reduce((total, item) => {
-      const price = item.listing?.price || item.price;
-      return total + (price * item.quantity);
+      // Get price from the listing object first, then fallback to item price
+      const price = Number(item.listing?.price || item.price || 0);
+      const quantity = Number(item.quantity || 1);
+      return total + (price * quantity);
     }, 0);
   };
 
@@ -132,19 +181,24 @@ const Cart = () => {
         {
           items: cartItems.map(item => ({
             listing: item.listing._id,
-            quantity: item.quantity,
-            price: item.listing.price
+            quantity: Number(item.quantity || 1),
+            price: Number(item.listing.price || 0)
           })),
-          totalAmount: calculateTotal()
+          totalAmount: Number(calculateTotal())
         },
-        { headers: { Authorization: `Bearer ${token}` } }
+        { 
+          headers: { 
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          } 
+        }
       );
 
-      // Redirect to SSLCommerz payment gateway
+      // Redirect to payment status page
       if (response.data.success && response.data.url) {
         window.location.href = response.data.url;
       } else {
-        toast.error('Failed to initialize payment');
+        toast.error(response.data.message || 'Failed to initialize payment');
       }
     } catch (error) {
       console.error('Error processing payment:', error);

@@ -9,7 +9,6 @@ import {
   paymentSuccess,
   paymentFailure,
   paymentCancel,
-  ipn
 } from '../controllers/paymentController.js';
 
 dotenv.config();
@@ -25,7 +24,6 @@ router.post('/init', authenticate, initPayment);
 router.post('/success', paymentSuccess);
 router.post('/fail', paymentFailure);
 router.post('/cancel', paymentCancel);
-router.post('/ipn', ipn);
 
 // Initialize SSLCommerz payment
 router.post('/ssl', authenticate, async (req, res) => {

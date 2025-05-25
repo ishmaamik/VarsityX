@@ -1,13 +1,5 @@
-import SSLCommerzPayment from 'sslcommerz-lts';
 import Transaction from '../models/Transaction.js';
 import Listing from '../models/Listing.js';
-import dotenv from 'dotenv';
-
-dotenv.config();
-
-const store_id = process.env.SSLCOMMERZ_STORE_ID;
-const store_passwd = process.env.SSLCOMMERZ_STORE_PASSWORD;
-const is_live = false; // Set to true for production
 
 // Initialize payment
 export const initPayment = async (req, res) => {
@@ -30,45 +22,20 @@ export const initPayment = async (req, res) => {
     });
     await transaction.save();
 
-    const data = {
-      total_amount: totalAmount,
-      currency: 'BDT',
-      tran_id: transaction._id.toString(), // unique tran_id for each transaction
-      success_url: `${process.env.SERVER_URL}/api/payment/success`,
-      fail_url: `${process.env.SERVER_URL}/api/payment/fail`,
-      cancel_url: `${process.env.SERVER_URL}/api/payment/cancel`,
-      ipn_url: `${process.env.SERVER_URL}/api/payment/ipn`,
-      shipping_method: 'NO',
-      product_name: items.map(item => item.listing.title).join(', '),
-      product_category: 'General',
-      product_profile: 'general',
-      cus_name: req.user.displayName,
-      cus_email: req.user.email,
-      cus_add1: 'Customer Address',
-      cus_city: 'Customer City',
-      cus_country: 'Bangladesh',
-    };
+    // For testing, simulate a successful payment initialization
+    const mockPaymentURL = `http://localhost:5173/marketplace/payment-status?transactionId=${transaction._id}&status=success`;
 
-    const sslcz = new SSLCommerzPayment(store_id, store_passwd, is_live);
-    const apiResponse = await sslcz.init(data);
-
-    if (apiResponse?.GatewayPageURL) {
-      res.json({
-        success: true,
-        url: apiResponse.GatewayPageURL,
-        transactionId: transaction._id
-      });
-    } else {
-      res.status(400).json({
-        success: false,
-        message: 'SSL payment initialization failed'
-      });
-    }
+    res.json({
+      success: true,
+      url: mockPaymentURL,
+      transactionId: transaction._id
+    });
   } catch (error) {
     console.error('Payment initialization error:', error);
     res.status(500).json({
       success: false,
-      message: 'Error initializing payment'
+      message: 'Error initializing payment',
+      error: error.message
     });
   }
 };
@@ -76,9 +43,9 @@ export const initPayment = async (req, res) => {
 // Payment success
 export const paymentSuccess = async (req, res) => {
   try {
-    const { val_id, tran_id, amount, card_type, card_no, bank_tran_id, status, tran_date } = req.body;
+    const { transactionId } = req.query;
 
-    const transaction = await Transaction.findById(tran_id);
+    const transaction = await Transaction.findById(transactionId);
     if (!transaction) {
       return res.status(404).json({
         success: false,
@@ -86,17 +53,8 @@ export const paymentSuccess = async (req, res) => {
       });
     }
 
-    // Update transaction status and payment details
+    // Update transaction status
     transaction.status = 'Completed';
-    transaction.paymentDetails = {
-      val_id,
-      amount,
-      card_type,
-      card_no,
-      bank_tran_id,
-      status,
-      tran_date
-    };
     await transaction.save();
 
     // Update listing status to sold
@@ -106,81 +64,69 @@ export const paymentSuccess = async (req, res) => {
       });
     }
 
-    // Redirect to frontend success page
-    res.redirect(`${process.env.CLIENT_URL}/payment/success?transactionId=${tran_id}`);
+    res.json({
+      success: true,
+      message: 'Payment completed successfully',
+      transaction
+    });
   } catch (error) {
     console.error('Payment success error:', error);
-    res.redirect(`${process.env.CLIENT_URL}/payment/error`);
+    res.status(500).json({
+      success: false,
+      message: 'Error processing payment success',
+      error: error.message
+    });
   }
 };
 
 // Payment failure
 export const paymentFailure = async (req, res) => {
   try {
-    const { tran_id } = req.body;
+    const { transactionId } = req.query;
 
-    const transaction = await Transaction.findById(tran_id);
+    const transaction = await Transaction.findById(transactionId);
     if (transaction) {
       transaction.status = 'Failed';
-      transaction.paymentDetails = req.body;
       await transaction.save();
     }
 
-    res.redirect(`${process.env.CLIENT_URL}/payment/failed?transactionId=${tran_id}`);
+    res.json({
+      success: false,
+      message: 'Payment failed',
+      transaction
+    });
   } catch (error) {
     console.error('Payment failure error:', error);
-    res.redirect(`${process.env.CLIENT_URL}/payment/error`);
+    res.status(500).json({
+      success: false,
+      message: 'Error processing payment failure',
+      error: error.message
+    });
   }
 };
 
 // Payment cancel
 export const paymentCancel = async (req, res) => {
   try {
-    const { tran_id } = req.body;
+    const { transactionId } = req.query;
 
-    const transaction = await Transaction.findById(tran_id);
+    const transaction = await Transaction.findById(transactionId);
     if (transaction) {
       transaction.status = 'Cancelled';
       await transaction.save();
     }
 
-    res.redirect(`${process.env.CLIENT_URL}/payment/cancelled?transactionId=${tran_id}`);
-  } catch (error) {
-    console.error('Payment cancel error:', error);
-    res.redirect(`${process.env.CLIENT_URL}/payment/error`);
-  }
-};
-
-// IPN (Instant Payment Notification)
-export const ipn = async (req, res) => {
-  try {
-    const { val_id, tran_id, status } = req.body;
-
-    const transaction = await Transaction.findById(tran_id);
-    if (transaction) {
-      transaction.status = status === 'VALID' ? 'Completed' : 'Failed';
-      transaction.paymentDetails = req.body;
-      await transaction.save();
-
-      if (status === 'VALID') {
-        // Update listing status to sold
-        for (const item of transaction.items) {
-          await Listing.findByIdAndUpdate(item.listing, {
-            status: 'sold'
-          });
-        }
-      }
-    }
-
-    res.status(200).json({
-      success: true,
-      message: 'IPN received'
+    res.json({
+      success: false,
+      message: 'Payment cancelled',
+      transaction
     });
   } catch (error) {
-    console.error('IPN error:', error);
+    console.error('Payment cancel error:', error);
     res.status(500).json({
       success: false,
-      message: 'Error processing IPN'
+      message: 'Error processing payment cancellation',
+      error: error.message
     });
   }
 }; 
