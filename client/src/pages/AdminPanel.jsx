@@ -43,7 +43,7 @@ const AdminPanel = () => {
     const navigate = useNavigate();
 
     // Configure axios
-    axios.defaults.baseURL = 'http://localhost:5000';
+    axios.defaults.baseURL = 'https://varsityx-backend-1.onrender.com';
     axios.defaults.withCredentials = true;
 
     useEffect(() => {

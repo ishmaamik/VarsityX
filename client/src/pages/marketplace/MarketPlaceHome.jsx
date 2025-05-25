@@ -23,7 +23,7 @@ const MarketplaceHome = () => {
         const token = localStorage.getItem('token');
         const headers = token ? { Authorization: `Bearer ${token}` } : {};
 
-        const response = await axios.get('http://localhost:5000/marketplace', {
+        const response = await axios.get('https://varsityx-backend-1.onrender.com/marketplace', {
           headers,
           params: { limit: 100, sortBy: 'newest' }
         });
@@ -43,7 +43,7 @@ const MarketplaceHome = () => {
       try {
         const token = localStorage.getItem('token');
         if (token) {
-          const response = await axios.get('http://localhost:5000/cart', {
+          const response = await axios.get('https://varsityx-backend-1.onrender.com/cart', {
             headers: { Authorization: `Bearer ${token}` }
           });
           setCartItems(response.data.cart);
@@ -70,7 +70,7 @@ const MarketplaceHome = () => {
     try {
       const token = localStorage.getItem('token');
       if (token) {
-        await axios.post('http://localhost:5000/cart', 
+        await axios.post('https://varsityx-backend-1.onrender.com/cart', 
           { listingId: product._id, quantity: 1 },
           { headers: { Authorization: `Bearer ${token}` } }
         );
@@ -219,7 +219,7 @@ const MarketplaceHome = () => {
                 <div className="h-48 overflow-hidden">
                   {listing.images?.[0] ? (
                     <img 
-                      src={`http://localhost:5000/images/${listing.images[0]}`}
+                      src={`https://varsityx-backend-1.onrender.com/images/${listing.images[0]}`}
                       alt={listing.title}
                       className="w-full h-full object-cover"
                     />

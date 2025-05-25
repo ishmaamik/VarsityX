@@ -18,7 +18,7 @@ import { io } from "socket.io-client";
 import { toast } from "react-hot-toast";
 import { FiDownload, FiClock } from "react-icons/fi"; // ✅ Correct
 
-const SERVER_URL = 'http://localhost:5000';
+const SERVER_URL = 'https://varsityx-backend-1.onrender.com';
 
 const Messages = () => {
   const location = useLocation();
@@ -43,7 +43,7 @@ const Messages = () => {
   const [searchingUsers, setSearchingUsers] = useState(false);
 
   // Configure axios
-  axios.defaults.baseURL = 'http://localhost:5000';
+  axios.defaults.baseURL = 'https://varsityx-backend-1.onrender.com';
   axios.defaults.withCredentials = true;
 
   // Initialize socket connection
@@ -51,7 +51,7 @@ const Messages = () => {
     const token = localStorage.getItem('token');
     if (!token || !currentUser) return;
 
-    const newSocket = io('http://localhost:5000', {
+    const newSocket = io('https://varsityx-backend-1.onrender.com', {
       auth: {
         token: `Bearer ${token}`
       }

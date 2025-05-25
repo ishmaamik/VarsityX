@@ -27,7 +27,7 @@ const ListingDetail = () => {
       try {
         const token = localStorage.getItem('token');
         if (token) {
-          const response = await axios.get('http://localhost:5000/user/user-data', {
+          const response = await axios.get('https://varsityx-backend-1.onrender.com/user/user-data', {
             headers: { Authorization: `Bearer ${token}` }
           });
           setCurrentUser(response.data);
@@ -44,7 +44,7 @@ const ListingDetail = () => {
     const fetchListing = async () => {
       try {
         setLoading(true);
-        const response = await axios.get(`http://localhost:5000/marketplace/${id}`);
+        const response = await axios.get(`https://varsityx-backend-1.onrender.com/marketplace/${id}`);
         setListing(response.data.listing);
       } catch (err) {
         setError(err.response?.data?.message || 'Failed to fetch listing');
@@ -61,7 +61,7 @@ const ListingDetail = () => {
       try {
         const token = localStorage.getItem('token');
         if (token) {
-          const response = await axios.get('http://localhost:5000/cart', {
+          const response = await axios.get('https://varsityx-backend-1.onrender.com/cart', {
             headers: { Authorization: `Bearer ${token}` }
           });
           setCartItems(response.data.cart);
@@ -86,7 +86,7 @@ const ListingDetail = () => {
         return;
       }
       
-      await axios.post(`http://localhost:5000/marketplace/${id}/bid`, 
+      await axios.post(`https://varsityx-backend-1.onrender.com/marketplace/${id}/bid`, 
         { amount: bidAmount },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -116,7 +116,7 @@ const ListingDetail = () => {
     try {
       const token = localStorage.getItem('token');
       if (token) {
-        await axios.post('http://localhost:5000/cart', 
+        await axios.post('https://varsityx-backend-1.onrender.com/cart', 
           { listingId: listing._id, quantity },
           { headers: { Authorization: `Bearer ${token}` } }
         );
@@ -162,7 +162,7 @@ const ListingDetail = () => {
       }
 
       const response = await axios.post(
-        `http://localhost:5000/api/messages/conversations/listing/${listing._id}`,
+        `https://varsityx-backend-1.onrender.com/api/messages/conversations/listing/${listing._id}`,
         { message: `Hi, I'm interested in your listing: ${listing.title}` },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -223,7 +223,7 @@ const ListingDetail = () => {
             <div className="h-96 bg-gray-200 dark:bg-gray-700 overflow-hidden">
               {listing.images?.[0] ? (
                 <img 
-                  src={`http://localhost:5000/images/${listing.images[0]}`}
+                  src={`https://varsityx-backend-1.onrender.com/images/${listing.images[0]}`}
                   alt={listing.title}
                   className="w-full h-full object-contain"
                 />
@@ -237,7 +237,7 @@ const ListingDetail = () => {
               {listing.images?.map((img, index) => (
                 <div key={index} className="h-24 bg-gray-100 dark:bg-gray-700 overflow-hidden cursor-pointer">
                   <img 
-                    src={`http://localhost:5000/images/${img}`}
+                    src={`https://varsityx-backend-1.onrender.com/images/${img}`}
                     alt={`Thumbnail ${index}`}
                     className="w-full h-full object-cover"
                   />

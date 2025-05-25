@@ -30,7 +30,7 @@ const Profile = () => {
       }
 
       const response = await axios.put(
-        'http://localhost:5000/api/users/update-university',
+        'https://varsityx-backend-1.onrender.com/api/users/update-university',
         { university: selectedUniversity },
         { headers: { Authorization: `Bearer ${token}` } }
       );

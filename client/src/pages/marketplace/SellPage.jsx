@@ -88,7 +88,7 @@ const SellPage = () => {
         formData.append('file', file);
         
         const response = await axios.post(
-          'http://localhost:5000/images/upload', 
+          'https://varsityx-backend-1.onrender.com/images/upload', 
           formData, 
           {
             headers: {
@@ -107,7 +107,7 @@ const SellPage = () => {
       
       // Add URLs to both preview and final URL arrays
       setImageUrls(prev => [...prev, ...uploadedUrls]);
-      setImages(prev => [...prev, ...uploadedUrls.map(url => `http://localhost:5000/images/${url}`)]);
+      setImages(prev => [...prev, ...uploadedUrls.map(url => `https://varsityx-backend-1.onrender.com/images/${url}`)]);
       
     } catch (err) {
       console.error('Upload error:', err);
@@ -176,7 +176,7 @@ const SellPage = () => {
       }
 
       // Create the listing
-      await axios.post('http://localhost:5000/marketplace', listingData, {
+      await axios.post('https://varsityx-backend-1.onrender.com/marketplace', listingData, {
         headers: { Authorization: `Bearer ${token}` }
       });
 

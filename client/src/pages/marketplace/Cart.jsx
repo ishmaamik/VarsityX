@@ -18,7 +18,7 @@ const Cart = () => {
         setLoading(true);
         const token = localStorage.getItem('token');
         if (token) {
-          const response = await axios.get('http://localhost:5000/cart', {
+          const response = await axios.get('https://varsityx-backend-1.onrender.com/cart', {
             headers: { Authorization: `Bearer ${token}` }
           });
           setCartItems(response.data.cart);
@@ -42,7 +42,7 @@ const Cart = () => {
     try {
       const token = localStorage.getItem('token');
       if (token) {
-        await axios.put(`http://localhost:5000/cart/${itemId}`, 
+        await axios.put(`https://varsityx-backend-1.onrender.com/cart/${itemId}`, 
           { quantity: newQuantity },
           { headers: { Authorization: `Bearer ${token}` } }
         );
@@ -68,7 +68,7 @@ const Cart = () => {
     try {
       const token = localStorage.getItem('token');
       if (token) {
-        await axios.delete(`http://localhost:5000/cart/${itemId}`, {
+        await axios.delete(`https://varsityx-backend-1.onrender.com/cart/${itemId}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         setCartItems(prev => prev.filter(item => item._id !== itemId));
@@ -87,7 +87,7 @@ const Cart = () => {
     try {
       const token = localStorage.getItem('token');
       if (token) {
-        await axios.delete('http://localhost:5000/cart', {
+        await axios.delete('https://varsityx-backend-1.onrender.com/cart', {
           headers: { Authorization: `Bearer ${token}` }
         });
       }
@@ -121,7 +121,7 @@ const Cart = () => {
       }
 
       const response = await axios.post(
-        'http://localhost:5000/api/payment/ssl',
+        'https://varsityx-backend-1.onrender.com/api/payment/ssl',
         {
           amount: calculateTotal().toFixed(2),
         },
@@ -210,7 +210,7 @@ const Cart = () => {
                       <div className="w-full sm:w-32 h-32 bg-gray-200 dark:bg-gray-700 rounded-lg overflow-hidden mb-4 sm:mb-0">
                         {listing.images?.[0] ? (
                           <img 
-                            src={`http://localhost:5000/images/${listing.images[0]}`}
+                            src={`https://varsityx-backend-1.onrender.com/images/${listing.images[0]}`}
                             alt={listing.title}
                             className="w-full h-full object-cover"
                           />

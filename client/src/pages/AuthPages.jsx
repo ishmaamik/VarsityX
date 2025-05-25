@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import { Mail, Lock, LogIn, UserPlus, GraduationCap } from "lucide-react";
 import axios from "axios";
 import { useNavigate, useLocation } from "react-router-dom";
-const API_BASE = "http://localhost:5000";
+const API_BASE = "https://varsityx-backend-1.onrender.com";
 
 export const Register = () => {
   const [formData, setFormData] = useState({

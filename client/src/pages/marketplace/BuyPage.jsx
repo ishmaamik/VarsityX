@@ -43,7 +43,7 @@ const BuyPage = () => {
         const token = localStorage.getItem('token');
         const headers = token ? { Authorization: `Bearer ${token}` } : {};
 
-        const response = await axios.get('http://localhost:5000/marketplace', {
+        const response = await axios.get('https://varsityx-backend-1.onrender.com/marketplace', {
           headers,
           params: {
             search: searchTerm,
@@ -76,7 +76,7 @@ const BuyPage = () => {
       try {
         const token = localStorage.getItem('token');
         if (token) {
-          const response = await axios.get('http://localhost:5000/cart', {
+          const response = await axios.get('https://varsityx-backend-1.onrender.com/cart', {
             headers: { Authorization: `Bearer ${token}` }
           });
           setCartItems(response.data.cart);
@@ -96,7 +96,7 @@ const BuyPage = () => {
     try {
       const token = localStorage.getItem('token');
       if (token) {
-        await axios.post('http://localhost:5000/cart', 
+        await axios.post('https://varsityx-backend-1.onrender.com/cart', 
           { listingId: product._id, quantity: 1 },
           { headers: { Authorization: `Bearer ${token}` } }
         );
@@ -271,7 +271,7 @@ const BuyPage = () => {
               <div className="h-48 bg-gray-200 dark:bg-gray-700 overflow-hidden">
                 {item.images?.[0] ? (
                   <img 
-                    src={`http://localhost:5000/images/${item.images[0]}`}
+                    src={`https://varsityx-backend-1.onrender.com/images/${item.images[0]}`}
                     alt={item.title}
                     className="w-full h-full object-cover"
                   />

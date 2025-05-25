@@ -29,7 +29,7 @@ const PaymentStatus = () => {
           try {
             const token = localStorage.getItem('token');
             if (token) {
-              await axios.delete('http://localhost:5000/cart', {
+              await axios.delete('https://varsityx-backend-1.onrender.com/cart', {
                 headers: { Authorization: `Bearer ${token}` }
               });
               console.log('Cart cleared successfully');

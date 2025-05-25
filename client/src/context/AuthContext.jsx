@@ -28,7 +28,7 @@ export const AuthProvider = ({ children }) => {
         axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
         
         // Get user data
-        const response = await axios.get('http://localhost:5000/api/users/user-data');
+        const response = await axios.get('https://varsityx-backend-1.onrender.com/api/users/user-data');
         if (response.data.success) {
           setUser(response.data.data);
         } else {
@@ -46,7 +46,7 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     try {
-      const response = await axios.post('http://localhost:5000/api/auth/login', {
+      const response = await axios.post('https://varsityx-backend-1.onrender.com/api/auth/login', {
         email,
         password
       });
