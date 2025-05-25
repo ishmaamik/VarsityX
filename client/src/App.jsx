@@ -21,6 +21,7 @@ import ImageUploader from "./components/ImageUploader";
 import PriceAdvisorPage from "./pages/PriceAdvisorPage";
 import AdminPanel from "./pages/AdminPanel";
 import Profile from "./pages/Profile";
+import StudentProfile from "./pages/StudentProfile";
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
@@ -199,8 +200,19 @@ function AppContent() {
         <Route
           path="/profile"
           element={
+            <ProtectedRoute>
               <Layout>
                 <Profile />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/student-profile"
+          element={
+              <Layout>
+                <StudentProfile />
               </Layout>
           }
         />

@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import User from '../models/User.js';
 import Conversation from '../models/Conversation.js';
+import University from '../models/University.js';
 
 // Register with JWT
 export const register = async (req, res) => {
@@ -287,10 +288,12 @@ export const getUsersByUniversity = async (req, res) => {
   try {
     const { university } = req.params;
     
+    // Find users with that university ID (since university names are used as IDs)
     const users = await User.find({ 
-      university,
+      university: university, // University names are used as IDs
       role: 'User' // Only get regular users, not admins
     })
+    .populate('university', 'name')
     .select('displayName email university')
     .sort('displayName');
 

@@ -21,7 +21,7 @@ const StudentAdminManagement = () => {
     try {
       const token = localStorage.getItem('token');
       const response = await axios.get(
-        `http://localhost:5000/api/users/university/${selectedUniversity}`,
+        `http://localhost:5000/user/university/${selectedUniversity}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       setUsers(response.data.users || []);
